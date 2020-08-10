@@ -6,14 +6,19 @@ def main():
     import pandas as pd
     from pysimgap.data import Data
 
-    # data = Data(pd.read_csv('testData1.csv'), sigmaV=100)
-    data = Data(pd.read_csv('testDataCRB2.csv'), sigmaV=100, strainPercent=True,
-                reloadStage=False, doubleUnload=False)
+    data = Data(pd.read_csv('data/testData11.csv'), sigmaV=100)
+    # dataCBR = Data(pd.read_csv('data/testDataCRB2.csv'), sigmaV=100,
+    #                strainPercent=True, reloadStage=False, doubleUnload=False)
 
     # -- Casagrande method
     from pysimgap.casagrande import Casagrande
     method1 = Casagrande(data)
-    fig1 = method1.getSigmaP(range2fitTOP=[25, 800], range2fitNCL=[500, 2000])
+    fig1 = method1.getSigmaP(range2fitTOP=None, range2fitNCL=None)
+    fig1 = method1.getSigmaP(range2fitTOP=None, range2fitNCL=[500, 2000])
+    fig1 = method1.getSigmaP(range2fitTOP=[10, 400], range2fitNCL=[500, 2000])
+    fig1 = method1.getSigmaP(range2fitTOP=[0, 1800], range2fitNCL=[500, 2000])
+    # method1 = Casagrande(dataCBR)
+    # fig1 = method1.getSigmaP(range2fitNCL=[500, 2000])
 
     # -- Becker et al. method
     from pysimgap.energy import BeckerEtAl

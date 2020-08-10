@@ -67,8 +67,12 @@ class Bilog():
         idx2fitNCL : list, tuple or array (length=2), optional
             Pair of indices between which the 1st-order polynomial fit is made
             on data of normally consolidated line to intersect the bisector
-            line and obtain the preconsolidation pressure.
-            The default is [7, 11].
+            line and obtain the preconsolidation pressure. The default is
+            [7, 11].
+        opt : int, optional
+            Integer value to indicate which bilogarithmic method will be used.
+            Butterfield (opt=1), Oikawa (opt=2) and Onitsuka etal (opt=3). The
+            default is 1
 
         Returns
         -------
@@ -99,9 +103,9 @@ class Bilog():
         def transformY(y, opt=1):
             return np.log10(y) if opt == 2 else np.log(y)
 
-        def ticks(x, pos): return f'$e^{np.log(x):.0f}$'
+        # def ticks(x, pos): return f'$e^{np.log(x):.0f}$'
 
-        xScl = 2 if opt == 1 else 10  # log scale for plotting
+        xScl = np.e if opt == 1 else 10  # log scale for plotting
         yLabel = r'$\log_{10} (1+e)$' if opt == 2 else r'$\ln (1+e)$'
 
         # -- Linear regresion of points on the preyield line (PYL)
@@ -113,7 +117,7 @@ class Bilog():
         r2PYL = r2_score(
             y_true=volPYLlog, y_pred=polyval(sigmaPYLlog, [p1_0, p1_1]))
         xPYLFit = np.linspace(
-            sigmaPYL.iloc[0], self.data.cleaned['stress'][sigmaVidx+2])
+            sigmaPYL.iloc[0], self.data.cleaned['stress'].max())
         yPYLFit = polyval(transformX(xPYLFit, opt), [p1_0, p1_1])
 
         # -- Linear regresion of points on the normally consolidated line (NCL)
@@ -144,8 +148,8 @@ class Bilog():
                 transformY(self.data.raw['specVol'][1:], opt),
                 ls='--', marker='o', lw=1, c='k', mfc='w', label='Data')
         ax.set_xscale('log', basex=xScl, subsx=[2, 3, 4, 5, 6, 7, 8, 9])
-        if opt == 1:
-            ax.xaxis.set_major_formatter(mtick.FuncFormatter(ticks))
+        # if opt == 1:
+        #     ax.xaxis.set_major_formatter(mtick.FuncFormatter(ticks))
         methods = ['Butterfield', 'Oikawa', r'Onitsuka \textit{et al.}']
         ax.plot(xPYLFit, yPYLFit, ls='--', c='darkcyan', lw=0.8,
                 label=f'Preyield line (R$^2={r2PYL:.3f}$)')

@@ -152,8 +152,13 @@ class Data:
             The ceiling index of the stress input.
 
         """
-        data4finding = self.cleaned if cleanedData else self.raw
-        idx = data4finding.query(f'stress >= {stress2find}').index[0]
+        if stress2find == 0:
+            idx = 1
+        elif stress2find > self.raw['stress'].max():
+            idx = -1
+        else:
+            data4finding = self.cleaned if cleanedData else self.raw
+            idx = data4finding.query(f'stress >= {stress2find}').index[0]
         return idx
 
     def recompressionIdx(self):
