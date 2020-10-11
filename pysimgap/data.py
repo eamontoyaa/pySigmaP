@@ -107,10 +107,12 @@ class Data:
         Find the break indices of the compressibility curve.
 
         The break indices are the following:
+
             - brkIdx1: The start of the first unload
             - brkIdx2: The end of the first unload (start of the first reload)
             - brkIdx3: Point on the NCL after first reload
             - brkIdx4: Index of the last point on the NCL
+
         Returns
         -------
         None.

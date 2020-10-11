@@ -8,15 +8,14 @@ def main():
 
     data = Data(pd.read_csv('data/testData11.csv'), sigmaV=100)
     # dataCBR = Data(pd.read_csv('data/testDataCRB2.csv'), sigmaV=100,
-    #                strainPercent=True, reloadStage=False, doubleUnload=False)
+    #                 strainPercent=True, reloadStage=False, doubleUnload=False)
 
     # -- Casagrande method
     from pysimgap.casagrande import Casagrande
     method1 = Casagrande(data)
+    fig1 = method1.getSigmaP(range2fitTOP=[30, 1500], range2fitNCL=[500, 3000])
+    # fig1 = method1.getSigmaP(range2fitTOP=None, range2fitNCL=[500, 2000])
     fig1 = method1.getSigmaP(range2fitTOP=None, range2fitNCL=None)
-    fig1 = method1.getSigmaP(range2fitTOP=None, range2fitNCL=[500, 2000])
-    fig1 = method1.getSigmaP(range2fitTOP=[10, 400], range2fitNCL=[500, 2000])
-    fig1 = method1.getSigmaP(range2fitTOP=[0, 1800], range2fitNCL=[500, 2000])
     # method1 = Casagrande(dataCBR)
     # fig1 = method1.getSigmaP(range2fitNCL=[500, 2000])
 
@@ -41,16 +40,24 @@ def main():
     fig5_1 = method5.getSigmaP(range2fitNCL=[500, 2000], opt=1)
     fig5_2 = method5.getSigmaP(range2fitNCL=[500, 2000], opt=2)
     fig5_3 = method5.getSigmaP(range2fitNCL=[500, 2000], opt=3)
+    fig5_1 = method5.getSigmaP(
+        range2fitSCR=[0, 30], range2fitNCL=[500, 2000], opt=1)
+    fig5_2 = method5.getSigmaP(
+        range2fitSCR=[0, 30], range2fitNCL=[500, 2000], opt=2)
+    fig5_3 = method5.getSigmaP(
+        range2fitSCR=[0, 30], range2fitNCL=[500, 2000], opt=3)
 
     # -- Pacheco-Silva's method
     from pysimgap.pachecosilva import PachecoSilva
     method6 = PachecoSilva(data)
-    fig6 = method6.getSigmaP(range2fitTOP=[100, 400], range2fitNCL=[500, 2000])
+    fig6 = method6.getSigmaP(range2fitNCL=[500, 2000])
+    fig6 = method6.getSigmaP()
 
     # -- Boone method
     from pysimgap.boone import Boone
     method7 = Boone(data)
-    fig7 = method7.getSigmaP(range2fitTOP=[25, 800], range2fitNCL=[500, 2000])
+    fig7 = method7.getSigmaP(range2fitNCL=[500, 2000])
+    fig7 = method7.getSigmaP()
 
 if __name__ == '__main__':
     main()
