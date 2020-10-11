@@ -6,6 +6,7 @@ pySigmaP's documentation
    :caption: Contents:
 
    readme
+   structure
    installation
    usage
    contributing
