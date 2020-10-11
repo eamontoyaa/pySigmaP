@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.abspath('../../pysimgap/'))
 sys.path.insert(0, os.path.abspath('../pysimgap/'))
 #sys.path.append(os.path.abspath('/mnt/Data/GitHub/pysigmap/pysimgap'))
 
-import pysigmap
+# import pysigmap
 
 # -- General configuration ---------------------------------------------
 
