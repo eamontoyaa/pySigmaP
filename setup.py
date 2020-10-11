@@ -41,7 +41,7 @@ setup(
     },
     install_requires=requirements,
     license="BSD license",
-	long_description_content_type='text/markdown',
+	long_description_content_type='text/x-rst',
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords=['Preconsolidation pressure', 'Yield stress', 'incremental loading oedometer testing', 'Python', 'application software'],
@@ -51,6 +51,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/eamontoyaa/pysigmap',
-    version='0.1.1',
+    version='0.1.2',
     zip_safe=False,
 )

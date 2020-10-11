@@ -1,5 +1,5 @@
-pySigmaP's documentation
-========================
+pySigmaP documentation
+======================
 
 .. toctree::
    :maxdepth: 2
