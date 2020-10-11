@@ -7,7 +7,7 @@ from setuptools import setup, find_packages
 with open('README.rst') as readme_file:
     readme = readme_file.read()
 
-with open('HISTORY.rst') as history_file:
+with open('docs/HISTORY.rst') as history_file:
     history = history_file.read()
 
 requirements = [
@@ -41,6 +41,7 @@ setup(
     },
     install_requires=requirements,
     license="BSD license",
+	long_description_content_type='text/markdown',
     long_description=readme + '\n\n' + history,
     include_package_data=True,
     keywords=['Preconsolidation pressure', 'Yield stress', 'incremental loading oedometer testing', 'Python', 'application software'],
