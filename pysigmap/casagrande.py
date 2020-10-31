@@ -24,6 +24,10 @@ import matplotlib.ticker as mtick
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12
 plt.rcParams['text.usetex'] = True
+# High-contrast qualitative colour scheme
+colors = ('#DDAA33',  # yellow
+          '#BB5566',  # red
+          '#004488')  # blue
 
 
 class Casagrande:
@@ -43,7 +47,9 @@ class Casagrande:
 
     Examples
     --------
-    >>> data = Data(pd.read_csv('testData/testData.csv'), sigmaV=75)
+    >>> urlCSV = ''.join(['https://raw.githubusercontent.com/eamontoyaa/',
+    >>>                   'data4testing/main/pysigmap/testData.csv'])
+    >>> data = Data(pd.read_csv(urlCSV), sigmaV=75)
     >>> method = Casagrande(data)
     >>> method.getSigmaP(range2fitFOP=None, loglog=True)
     >>> method.sigmaP, method.ocr
@@ -149,6 +155,7 @@ class Casagrande:
             self.sigmaMC, self.data.cleaned['stress'].iloc[-1], 50))
         y2 = slopeMP * (x2 - x1) + y1
         slopeBisect = np.tan(0.5*np.arctan(slopeMP))  # slope of bisector line
+        # print(slopeMP, slopeBisect)
         y2bis = slopeBisect * (x2 - x1) + y1
 
         # -- Preconsolidation pressure
@@ -162,50 +169,70 @@ class Casagrande:
         ax1 = fig.add_axes([0.08, 0.12, 0.55, 0.85])
         ax2 = ax1.twinx()  # second y axis for curvature function
         l1 = ax1.plot(self.data.raw['stress'][1:], self.data.raw['e'][1:],
-                      ls='--', marker='o', lw=1, c='k', mfc='w',
+                      ls=(0, (1, 1)), marker='o', lw=1.5, c='k', mfc='w',
                       label='Compressibility curve')
         # Lines of the Casagrande's method
         ax1.plot([self.sigmaMC, self.data.cleaned['stress'].iloc[-1]],
-                 [self.eMC, self.eMC], ls='-.', lw=0.5, c='k')  # hztl line
-        ax1.plot(10**x2, y2, ls='-.', lw=0.5, color='k')  # tangent line
-        ax1.plot(10**x2, y2bis, ls='-.', lw=0.5, color='k')  # bisector line
+                 [self.eMC, self.eMC], ls='--', lw=1.125, c='k')  # hztl line
+        ax1.plot(10**x2, y2, ls='--', lw=1.125, color='k')  # tangent line
+        ax1.plot(10**x2, y2bis, ls='--', lw=1.125, color='k')  # bisector line
         # Compression index (Cc)
         x4Cc = np.linspace(self.sigmaP, self.data.cleaned['stress'].iloc[-1])
         y4Cc = -self.data.idxCc * np.log10(x4Cc) + self.data.idxCcInt
-        l2 = ax1.plot(x4Cc, y4Cc, ls='--', lw=0.8, color='darkgreen',
+        l2 = ax1.plot(x4Cc, y4Cc, ls='-', lw=1.5, color=colors[1],
                       label=str().join([r'$C_\mathrm{c}=$',
                                         f'{self.data.idxCc:.3f}']))
-        # Curvature
-        l5 = ax2.plot(x4FOP, curvature, ls='--', c='darkorange', lw=0.8,
-                      mfc='w', label='Curvature')
+        if self.data.fitCc:
+            l3 = ax1.plot(
+                self.data.cleaned['stress'].iloc[self.data.maskCc],
+                self.data.cleaned['e'].iloc[self.data.maskCc], ls='',
+                marker='x', color=colors[1],
+                label=f'Data for linear fit\n(R$^2={self.data.r2Cc:.3f}$)')
+        if mcp is None:  # Curvature
+            l6 = ax2.plot(x4FOP, curvature, ls='--', c=colors[0], lw=1.125,
+                          mfc='w', label='Curvature')
+
+        if mcp is not None:
+            allLayers = l1 + l2
+        elif range2fitFOP is not None:  # Fourth order polynomial fit
+            l4 = ax1.plot(x4FOP, y4FOP, ls='--', lw=1.125, color=colors[2],
+                          label=r'$4^\mathrm{th}$-order polynomial')
+            l5 = ax1.plot(sigmaFOP, eFOP, ls='', marker='+', c=colors[2],
+                          label=f'Data for linear fit\n(R$^2={r2FOP:.3f}$)')
+            allLayers = l1 + l2 + l4 + l5 + l6
+        else:  # Cubic spline
+            allLayers = l1 + l2 + l6
+        if self.data.fitCc:
+            allLayers.insert(2, l3[0])
         # Other plots
-        l6 = ax1.plot(self.sigmaMC, self.eMC, ls='', marker='o', c='r',
-                      mfc='w', label='Max. curvature point')
-        l7 = ax1.plot(self.sigmaP, self.eSigmaP, ls='', marker='D', c='r',
-                      ms=5, mfc='w',
+        l7 = ax1.plot(self.data.sigmaV, self.data.eSigmaV, ls='', marker='|',
+                      c='r', ms=15, mfc='w', mew=1.5,
+                      label=str().join([r'$\sigma^\prime_\mathrm{v_0}=$ ',
+                                        f'{self.data.sigmaV:.0f} kPa']))
+        l8 = ax1.plot(self.sigmaMC, self.eMC, ls='', marker='^', c=colors[0],
+                      mfc='w', mew=1.5, ms=7, label='Max. curvature point')
+        l9 = ax1.plot(self.sigmaP, self.eSigmaP, ls='', marker='o', mfc='w',
+                      c=colors[0], ms=7, mew=1.5,
                       label=str().join([r'$\sigma^\prime_\mathrm{p}=$ ',
                                         f'{self.sigmaP:.0f} kPa\n',
                                         f'OCR= {self.ocr:.1f}']))
-        # Fourth order polynomial fit
-        if range2fitFOP is not None:
-            l3 = ax1.plot(x4FOP, y4FOP, ls='--', lw=0.8, color='darkred',
-                          label=r'$4^\mathrm{th}$-order polynomial')
-            l4 = ax1.plot(sigmaFOP, eFOP, ls='', marker='x', c='darkred',
-                          label=f'Data for linear fit\n(R$^2={r2FOP:.3f}$)')
-            allLayers = l1 + l2 + l3 + l4 + l5 + l6 + l7
-        else:
-            allLayers = l1 + l2 + l5 + l6 + l7
+        allLayers += l7 + l8 + l9
         # Legend
         labs = [layer.get_label() for layer in allLayers]
-        ax2.legend(allLayers, labs, bbox_to_anchor=(1.15, 0.5), loc=6,
+        ax2.legend(allLayers, labs, bbox_to_anchor=(1.125, 0.5), loc=6,
                    title=r"\textbf{Casagrande method}")
         # Other details
-        ax1.set(xscale='log', ylabel=r'Void ratio $(e)$',
-                xlabel=str().join(['Vertical effective stress ',
-                                  r'$(\sigma^\prime_\mathrm{v})$ [kPa]']))
+        ax1.spines['top'].set_visible(False)
+        ax1.spines['right'].set_visible(False)
+        ax2.spines['top'].set_visible(False)
+        ax1.set(xscale='log', ylabel=r'Void ratio, $e$',
+                xlabel=str().join(['Vertical effective stress, ',
+                                  r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
         ax1.xaxis.set_major_formatter(mtick.ScalarFormatter())
+        ax1.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax2.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax2.set(ylabel='Curvature $(k)$')
-        ax1.grid(True, which="both", ls='--', lw=0.5)
+        ax1.grid(False)
         return fig
 
 

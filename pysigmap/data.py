@@ -18,11 +18,14 @@ import matplotlib.ticker as mtick
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12
 plt.rcParams['text.usetex'] = True
+# High-contrast qualitative colour scheme
+colors = ('#DDAA33',  # yellow
+          '#BB5566',  # red
+          '#004488')  # blue
 
 
 class Data:
-    """
-    ``Data`` class.
+    """``Data`` class.
 
     When the object is instanced, the compression and recompression indices
     are automatically calculated with the default inputs of the methods.
@@ -32,10 +35,10 @@ class Data:
     Attributes
     ----------
     rawData : pandas DataFrame
-        Data from the consolidation test. It includes three series with the
-        following and strict order: effective vertical stress, axial strain and
-        void ratio.  The first row must include the initial void ratio of the
-        sample.
+        Data from the incremental loading consolidation test. It includes three
+        series with the following and strict order: effective vertical stress,
+        axial strain and void ratio. The first row must include the initial
+        void ratio of the specimen.
     sigmaV : float
         Vertical effective stress of the tested sample.
     strainPercent : bool, optional
@@ -50,9 +53,13 @@ class Data:
 
     Examples
     --------
-    >>> data = Data(pd.read_csv('testData/testData.csv'), sigmaV=75)
+    >>> urlCSV = ''.join(['https://raw.githubusercontent.com/eamontoyaa/',
+    >>>                   'data4testing/main/pysigmap/testData.csv'])
+    >>> urlXLSX = ''.join(['https://raw.githubusercontent.com/eamontoyaa/',
+    >>>                    'data4testing/main/pysigmap/testData.xlsx'])
+    >>> data = Data(pd.read_csv(urlCSV), sigmaV=75)
     >>> # or
-    >>> data = Data(pd.read_excel('testData/testData.xlsx'), sigmaV=75)
+    >>> data = Data(pd.read_excel(urlXLSX), sigmaV=75)
     >>> data.plot()
     >>> data.idxCc, data.idxCr
     (0.23829647651319996, 0.04873212611656529)
@@ -208,7 +215,7 @@ class Data:
         None.
         """
         self.range2fitCc = range2fitCc
-        if range2fitCc is None:  # Using the cubic spline for the NC line
+        if range2fitCc is None:  # Using a cubic spline
             sigmaLog = np.log10(self.cleaned['stress'][1:])
             cs = CubicSpline(x=sigmaLog, y=self.cleaned['e'][1:])
             sigmaCS = np.linspace(sigmaLog.iloc[0], sigmaLog.iloc[-1], 500)
@@ -217,7 +224,7 @@ class Data:
             idxCcInt = cs(sigmaCS[steepestSlopeIdx]) - \
                 idxCc*sigmaCS[steepestSlopeIdx]
             self.fitCc = False
-        else:  # Fitting a line to some points for the NC line
+        else:  # Using a linear fit of a first-order polynomial
             idxInitCc = self.findStressIdx(
                 stress2find=range2fitCc[0], cleanedData=True)
             idxEndCc = self.findStressIdx(
@@ -225,7 +232,7 @@ class Data:
             maskCc = np.full(len(self.cleaned), False)
             maskCc[idxInitCc: idxEndCc] = True
             self.maskCc = maskCc
-            # -- Linear regresion of points on normally consolidated line (Cc)
+            # -- Linear regresion
             sigmaCc = self.cleaned['stress'].iloc[maskCc]
             sigmaCclog = np.log10(sigmaCc)
             eCc = self.cleaned['e'].iloc[maskCc]
@@ -288,39 +295,43 @@ class Data:
         # -- plotting
         fig = plt.figure(figsize=[9, 4.8])
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
-        ax.plot(self.raw['stress'][1:], self.raw['e'][1:], ls='--', marker='o',
-                lw=1, c='k', mfc='w', label='Experimental data')
+        ax.plot(self.raw['stress'][1:], self.raw['e'][1:], ls=(0, (1, 1)),
+                marker='o', lw=1.5, c='k', mfc='w', label='Experimental data')
         ax.plot(self.sigmaV, self.eSigmaV, ls='', marker='|', c='r', ms=15,
-                mfc='w', label=str().join([r'$\sigma^\prime_\mathrm{v_0}=$ ',
-                                           f'{self.sigmaV:.0f} kPa']))
+                mfc='w', mew=1.5,
+                label=str().join([r'$\sigma^\prime_\mathrm{v_0}=$ ',
+                                  f'{self.sigmaV:.0f} kPa']))
         # Compression index
         x4Cc = np.linspace(
             self.cleaned['stress'].iloc[-4], self.cleaned['stress'].iloc[-1])
         y4Cc = -self.idxCc * np.log10(x4Cc) + self.idxCcInt
-        ax.plot(x4Cc, y4Cc, ls='--', lw=0.8, color='darkgreen',
+        ax.plot(x4Cc, y4Cc, ls='-', lw=1.125, color=colors[1],
                 label=str().join([r'$C_\mathrm{c}=$', f'{self.idxCc:.3f}']))
         if self.fitCc:
             ax.plot(self.cleaned['stress'].iloc[self.maskCc],
-                    self.cleaned['e'].iloc[self.maskCc],
-                    ls='', marker='x', lw=0.8, color='darkgreen',
+                    self.cleaned['e'].iloc[self.maskCc], ls='', marker='x',
+                    color=colors[1],
                     label=f'Data for linear fit\n(R$^2={self.r2Cc:.3f}$)')
         # Recompression index
         x4Cr = np.linspace(self.raw['stress'].iloc[self.maskCr].min(),
                            self.raw['stress'].iloc[self.maskCr].max())
         y4Cr = -self.idxCr * np.log10(x4Cr) + self.idxCrInt
-        ax.plot(x4Cr, y4Cr, ls='--', lw=0.8, color='darkred',
+        ax.plot(x4Cr, y4Cr, ls='-', lw=1.125, color=colors[2],
                 label=str().join([r'$C_\mathrm{r}=$', f'{self.idxCr:.3f}']))
         ax.plot(self.raw['stress'].iloc[self.maskCr],
-                self.raw['e'].iloc[self.maskCr], ls='', marker='+', lw=0.8,
-                color='darkred',
+                self.raw['e'].iloc[self.maskCr], ls='', marker='+',
+                color=colors[2],
                 label=f'Data for linear fit\n(R$^2={self.r2Cr:.3f}$)')
         # other details
-        ax.set(xscale='log', ylabel='Void ratio $(e)$',
-               xlabel=str().join(['Vertical effective stress ',
-                                  r'$(\sigma^\prime_\mathrm{v})$ [kPa]']))
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.set(xscale='log', ylabel='Void ratio, $e$',
+               xlabel=str().join(['Vertical effective stress, ',
+                                  r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
         ax.xaxis.set_major_formatter(mtick.ScalarFormatter())
-        ax.grid(True, which="both", ls='--', lw=0.5)
-        ax.legend(bbox_to_anchor=(1.04, 0.5), loc=6,
+        ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.grid(False)
+        ax.legend(bbox_to_anchor=(1.125, 0.5), loc=6,
                   title=r"\textbf{Compressibility curve}")
         return fig
 

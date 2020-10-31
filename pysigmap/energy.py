@@ -29,10 +29,15 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 from sklearn.metrics import r2_score
+import matplotlib.ticker as mtick
 
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12
 plt.rcParams['text.usetex'] = True
+# High-contrast qualitative colour scheme
+colors = ('#DDAA33',  # yellow
+          '#BB5566',  # red
+          '#004488')  # blue
 
 
 class BeckerEtAl():
@@ -52,12 +57,14 @@ class BeckerEtAl():
 
     Examples
     --------
-    >>> data = Data(pd.read_csv('testData/testData.csv'), sigmaV=75)
+    >>> urlCSV = ''.join(['https://raw.githubusercontent.com/eamontoyaa/',
+    >>>                   'data4testing/main/pysigmap/testData.csv'])
+    >>> data = Data(pd.read_csv(urlCSV), sigmaV=75)
     >>> method = BeckerEtAl(data)
-    >>> method.getSigmaP(range2fitSCR=None, range2fitLCR=None, zoom=4)
+    >>> method.getSigmaP(range2fitRR=None, range2fitCR=None, zoom=4)
     >>> method.sigmaP, method.ocr
     (670.2104847956236, 8.936139797274983)
-    >>> method.getSigmaP(range2fitSCR=None, range2fitLCR=[700, 10000], zoom=4)
+    >>> method.getSigmaP(range2fitRR=None, range2fitCR=[700, 10000], zoom=4)
     >>> method.sigmaP, method.ocr
     (500.09903645877176, 6.667987152783623)
     """
@@ -65,12 +72,13 @@ class BeckerEtAl():
     def __init__(self, data):
         """Initialize the class."""
         self.data = data
+        self.morinFormulation = False
         self.calculateWork()
         return
 
-    def calculateWork(self, morinFormulation=False):
+    def calculateWork(self):
         """
-        Calculate the cumulated (total) strain energy.
+        Calculate the work per unit volume.
 
         Returns
         -------
@@ -81,36 +89,38 @@ class BeckerEtAl():
         epsilon = self.data.raw['strain'].array
         deltaWork = 0.5*(epsilon[1:] - epsilon[:-1])*(sigma[1:] + sigma[:-1])
         deltaWork = np.hstack((0, deltaWork))
-        if morinFormulation:  # Work per unit volume of solids
-            deltaWork *= (1 + self.data.e_0)
+        if self.morinFormulation:  # Work per unit volume of solids
+            deltaWork /= (1 + self.data.e_0)
         self.data.raw['deltaWork'] = deltaWork
         self.data.raw['work'] = np.cumsum(deltaWork)
         self.data.clean()  # Data without unloads
         return
 
-    def getSigmaP(self, range2fitSCR=None, range2fitLCR=None, zoom=3,
+    def getSigmaP(self, range2fitRR=None, range2fitCR=None, zoom=3,
                   morinFormulation=False):
         """
         Return the value of the preconsolidation pressure or yield stress.
 
         Parameters
         ----------
-        range2fitSCR : list, tuple or array (length=2), optional
-            Initial and final pressures between which the first-order
-            polynomial will be fit to the data on the small compressibility
-            range (SCR) (i.e. pre-yield range). If None, the SCR will be fit
-            from the first point of the curve to the point before the
-            in-situ vertical effective stress. The default is None.
-        range2fitLCR : list, tuple or array (length=2), optional
-            Initial and final pressures between which the first-order
-            polynomial will be fit to the data on the large compressibility
-            range (LCR) (i.e. post-yield range). If None, the LCR will be
-            automatically fit to the same points used for calculating the
-            compression index only if it was calculated with a linear fit,
-            otherwise, the last three points of the data will be used.
-            The default is None.
+        range2fitRR : list, tuple or array (length=2), optional
+            Initial and final pressures between which the first order
+            polynomial will be fit to the data on the recompression range (RR)
+            (range before the preconsolidation pressure). If None, the first
+            order polynomial will be fit from the first point of the curve to
+            the point before the in-situ vertical effective stress. The default
+            is None.
+        range2fitCR : list, tuple or array (length=2), optional
+            Initial and final pressures between which the first order
+            polynomial will be fit to the data on the compression range (CR)
+            (range beyond the preconsolidation pressure). If None, the CR will
+            be automatically fit to the same points used for calculating the
+            compression index with the ``Data`` class only if it was calculated
+            with a linear fit, otherwise, the steepest slope of the cubic
+            spline that passes through the data will be used. The default is
+            None.
         zoom : int, optional
-            Value to magnify the view of the firsts points of the test and the
+            Value to magnify the view of the firsts points of the curve and the
             preconsolidation pressure in an inset window. The default is 3.
         morinFormulation : bool, optional
             Boolean to specify if the work per unit volume of solids (Morin
@@ -123,49 +133,49 @@ class BeckerEtAl():
             Figure with the development of the method and the results.
 
         """
-        # Calculating work
+        # -- Calculating work
         if morinFormulation:
             self.morinFormulation = morinFormulation
             self.calculateWork()  # Calculate again with Morin Formulation
 
-        # -- Preyield range or small compressibility range (SCR)
-        maskSCR = np.full(len(self.data.cleaned), False)
-        if range2fitSCR is None:  # Indices for fitting the SCR line
-            idxInitSCR = 0
-            idxEndSCR = self.data.findStressIdx(
+        # -- Preyield range or recompression range (RR)
+        maskRR = np.full(len(self.data.cleaned), False)
+        if range2fitRR is None:  # Indices for fitting the RR line
+            idxInitRR = 0
+            idxEndRR = self.data.findStressIdx(
                 stress2find=self.data.sigmaV, cleanedData=True)
         else:
-            idxInitSCR = self.data.findStressIdx(
-                stress2find=range2fitSCR[0], cleanedData=True)
-            idxEndSCR = self.data.findStressIdx(
-                stress2find=range2fitSCR[1], cleanedData=True)
-        maskSCR[idxInitSCR: idxEndSCR] = True
-        # -- Linear regresion of points on the preyield line (SCR)
-        sigmaSCR = self.data.cleaned['stress'][maskSCR]
-        workSCR = self.data.cleaned['work'][maskSCR]
-        p1_0, p1_1 = polyfit(sigmaSCR, workSCR, deg=1)
-        r2SCR = r2_score(
-            y_true=workSCR, y_pred=polyval(sigmaSCR, [p1_0, p1_1]))
-        xSCR = np.linspace(0, self.data.cleaned['stress'].iloc[-3])
-        ySCR = polyval(xSCR, [p1_0, p1_1])
+            idxInitRR = self.data.findStressIdx(
+                stress2find=range2fitRR[0], cleanedData=True)
+            idxEndRR = self.data.findStressIdx(
+                stress2find=range2fitRR[1], cleanedData=True)
+        maskRR[idxInitRR: idxEndRR] = True
+        # Linear regresion
+        sigmaRR = self.data.cleaned['stress'][maskRR]
+        workRR = self.data.cleaned['work'][maskRR]
+        p1_0, p1_1 = polyfit(sigmaRR, workRR, deg=1)
+        r2RR = r2_score(
+            y_true=workRR, y_pred=polyval(sigmaRR, [p1_0, p1_1]))
+        xRR = np.linspace(0, self.data.cleaned['stress'].iloc[-3])
+        yRR = polyval(xRR, [p1_0, p1_1])
 
-        # -- Post yield range or large compressibility range
-        maskLCR = np.full(len(self.data.cleaned), False)
-        if range2fitLCR is not None or self.data.fitCc:
-            if range2fitLCR is not None:
-                idxInitLCR = self.data.findStressIdx(
-                    stress2find=range2fitLCR[0], cleanedData=True)
-                idxEndLCR = self.data.findStressIdx(
-                    stress2find=range2fitLCR[1], cleanedData=True)
-                maskLCR[idxInitLCR: idxEndLCR] = True
+        # -- Post yield range or compression range (CR)
+        maskCR = np.full(len(self.data.cleaned), False)
+        if range2fitCR is not None or self.data.fitCc:  # Using a linear fit
+            if range2fitCR is not None:
+                idxInitCR = self.data.findStressIdx(
+                    stress2find=range2fitCR[0], cleanedData=True)
+                idxEndCR = self.data.findStressIdx(
+                    stress2find=range2fitCR[1], cleanedData=True)
+                maskCR[idxInitCR: idxEndCR] = True
             elif self.data.fitCc:
-                maskLCR = self.data.maskCc
-            # -- Linear regresion of points on post yield line
-            sigmaLCR = self.data.cleaned['stress'][maskLCR]
-            workLCR = self.data.cleaned['work'][maskLCR]
-            lcrInt, lcrSlope = polyfit(sigmaLCR, workLCR, deg=1)
-            r2LCR = r2_score(
-                y_true=workLCR, y_pred=polyval(sigmaLCR, [lcrInt, lcrSlope]))
+                maskCR = self.data.maskCc
+            # Linear regresion
+            sigmaCR = self.data.cleaned['stress'][maskCR]
+            workCR = self.data.cleaned['work'][maskCR]
+            lcrInt, lcrSlope = polyfit(sigmaCR, workCR, deg=1)
+            r2CR = r2_score(
+                y_true=workCR, y_pred=polyval(sigmaCR, [lcrInt, lcrSlope]))
         else:  # Using the steepest point of a cubic spline
             sigma = self.data.cleaned['stress']
             cs = CubicSpline(x=sigma, y=self.data.cleaned['work'])
@@ -174,9 +184,9 @@ class BeckerEtAl():
             lcrSlope = cs(sigmaCS, 1)[steepestSlopeIdx]
             lcrInt = cs(sigmaCS[steepestSlopeIdx]) - \
                 lcrSlope*sigmaCS[steepestSlopeIdx]
-        xLCR = np.linspace(
+        xCR = np.linspace(
             -lcrInt/lcrSlope, self.data.cleaned['stress'].iloc[-1])
-        yLCR = polyval(xLCR, [lcrInt, lcrSlope])
+        yCR = polyval(xCR, [lcrInt, lcrSlope])
 
         # -- Preconsolitadion pressure
         workSigmaV = polyval(self.data.sigmaV, [p1_0, p1_1])
@@ -184,65 +194,75 @@ class BeckerEtAl():
         self.wSigmaP = polyval(self.sigmaP, [p1_0, p1_1])
         self.ocr = self.sigmaP / self.data.sigmaV
 
-        # -- plot compresibility curve
+        # -- Plot compresibility curve
         fig = plt.figure(figsize=[9, 4.8])
-        ax = fig.add_axes([0.08, 0.12, 0.65, 0.85])
-        ax.plot(self.data.raw['stress'], self.data.raw['work'], ls='--',
-                marker='o', lw=1, c='k', mfc='w', label='Data')  # all data
-
-        # Small compressibility range
-        ax.plot(xSCR, ySCR, ls='--', c='darkred', lw=0.8,
-                label='Preyield line')
-        ax.plot(sigmaSCR, workSCR, ls='', marker='+', c='darkred',
-                label=f'Data for linear fit\n(R$^2={r2SCR:.3f}$)')
-        # Large compressibility range
-        ax.plot(xLCR, yLCR, ls='--', c='darkgreen', lw=0.8,
-                label='Postyield line')
-        if range2fitLCR is not None or self.data.fitCc:
-            ax.plot(sigmaLCR, workLCR, ls='', marker='x', c='darkgreen',
-                    label=f'Data for linear fit\n(R$^2={r2LCR:.3f}$)')
+        ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
+        ax.plot(self.data.raw['stress'], self.data.raw['work'], ls=(0, (1, 1)),
+                marker='o', lw=1.5, c='k', mfc='w', label='Data')  # all data
+        # Recompression range
+        ax.plot(xRR, yRR, ls='-', c=colors[2], lw=1.125,
+                label='Recompression range')
+        ax.plot(sigmaRR, workRR, ls='', marker='+', c=colors[2],
+                label=f'Data for linear fit\n(R$^2={r2RR:.3f}$)')
+        # Compression range
+        ax.plot(xCR, yCR, ls='-', c=colors[1], lw=1.125,
+                label='Compression range')
+        if range2fitCR is not None or self.data.fitCc:
+            ax.plot(sigmaCR, workCR, ls='', marker='x', c=colors[1],
+                    label=f'Data for linear fit\n(R$^2={r2CR:.3f}$)')
         # Other plots
         ax.plot(self.data.sigmaV, workSigmaV, ls='', marker='|', c='r', ms=15,
-                mfc='w', label=str().join([r'$\sigma^\prime_\mathrm{v0}=$ ',
-                                           f'{self.data.sigmaV:.0f} kPa']))
-        ax.plot(self.sigmaP, self.wSigmaP, ls='', marker='D', c='r', ms=5,
-                mfc='w', label=str().join([r'$\sigma^\prime_\mathrm{p}=$ ',
-                                           f'{self.sigmaP:.0f} kPa\n',
-                                           f'OCR= {self.ocr:.1f}']))
+                mfc='w', mew=1.5,
+                label=str().join([r'$\sigma^\prime_\mathrm{v0}=$ ',
+                                  f'{self.data.sigmaV:.0f} kPa']))
+        ax.plot(self.sigmaP, self.wSigmaP, ls='', c=colors[0], ms=7, mfc='w',
+                marker='o', mew=1.5,
+                label=str().join([r'$\sigma^\prime_\mathrm{p}=$ ',
+                                  f'{self.sigmaP:.0f} kPa\n',
+                                  f'OCR= {self.ocr:.1f}']))
         # Other details
-        methodTitle = r"\textbf{Becker \textit{et al.} method}"
         if morinFormulation:
             methodTitle = r"\textbf{Morin method}"
-            yAxisLabel = 'Total work per unit vol. of soilds (W) [kJ m$^{-3}$]'
         else:
-            yAxisLabel = 'Total work per unit vol. (W) [kJ m$^{-3}$]'
-        ax.set(ylabel=yAxisLabel, xlabel=str().join([
-            'Vertical effective stress ',
-            r'$(\sigma^\prime_\mathrm{v})$ [kPa]']))
-        ax.grid(True, ls='--', lw=0.5)
-        ax.legend(bbox_to_anchor=(1.02, 0.5), loc=6, title=methodTitle)
+            methodTitle = r"\textbf{Becker \textit{et al.} method}"
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
+        ax.set(ylabel='Total work per unit volume, $W$ [kJ m$^{-3}$]',
+               xlabel=str().join(['Vertical effective stress, ',
+                                  r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
+        ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.grid(False)
+        ax.legend(bbox_to_anchor=(1.125, 0.5), loc=6, title=methodTitle)
 
         # -- inset axes to zoom
         axins = zoomed_inset_axes(ax, zoom=zoom, loc=4)
-        axins.plot(self.data.raw['stress'], self.data.raw['work'], ls='--',
-                   marker='o', lw=1, c='k', mfc='w')  # all data
-        axins.plot(xSCR, ySCR, ls='--', c='darkred', lw=0.8)
-        axins.plot(sigmaSCR, workSCR, ls='', marker='+', c='darkred')
-        axins.plot(xLCR, yLCR, ls='--', c='darkgreen', lw=0.8)
-        if range2fitLCR is not None or self.data.fitCc:
-            axins.plot(sigmaLCR, workLCR, ls='', marker='x', c='darkgreen')
+        axins.plot(self.data.raw['stress'], self.data.raw['work'], ls=':',
+                   marker='o', lw=1.5, c='k', mfc='w')  # all data
+        axins.plot(xRR, yRR, ls='-', c=colors[2], lw=1.125)
+        axins.plot(sigmaRR, workRR, ls='', marker='+', c=colors[2])
+        axins.plot(xCR, yCR, ls='-', c=colors[1], lw=1.125)
+        if range2fitCR is not None or self.data.fitCc:
+            axins.plot(sigmaCR, workCR, ls='', marker='x', c=colors[1])
         axins.plot(self.data.sigmaV, workSigmaV, ls='', marker='|', c='r',
-                   ms=15, mfc='w')
-        axins.plot(self.sigmaP, self.wSigmaP, marker='D', c='r', ms=5, mfc='w')
-        axins.grid(True, ls='--', lw=0.5)
+                   ms=15, mfc='w', mew=1.5)
+        axins.plot(self.sigmaP, self.wSigmaP, marker='o', c=colors[0], ms=7,
+                   mfc='w', mew=1.5)
+        # axins.spines['bottom'].set_visible(False)
+        # axins.spines['right'].set_visible(False)
+        axins.grid(False)
         axins.set(xlim=(-0.05*self.sigmaP, 1.25 * self.sigmaP),
                   ylim=(-0.05 * self.wSigmaP, 2.05 * self.wSigmaP),
                   xlabel=r'$\sigma^\prime_\mathrm{v}$ [kPa]',
                   ylabel=r'W [kJ m$^{-3}$]')
         axins.xaxis.tick_top()
         axins.xaxis.set_label_position('top')
+        axins.yaxis.tick_right()
+        axins.yaxis.set_label_position('right')
         axins.xaxis.set_tick_params(labelsize='small')
         axins.yaxis.set_tick_params(labelsize='small')
+        axins.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        axins.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         # axins.set_yticks([])
         mark_inset(ax, axins, loc1=2, loc2=3, fc='none', ec="0.5")  # bbox
         return fig
@@ -265,12 +285,14 @@ class WangAndFrost(BeckerEtAl):
 
     Examples
     --------
-    >>> data = Data(pd.read_csv('testData/testData.csv'), sigmaV=75)
+    >>> urlCSV = ''.join(['https://raw.githubusercontent.com/eamontoyaa/',
+    >>>                   'data4testing/main/pysigmap/testData.csv'])
+    >>> data = Data(pd.read_csv(urlCSV), sigmaV=75)
     >>> method = WangAndFrost(data)
-    >>> method.getSigmaP(range2fitLCR=None)
+    >>> method.getSigmaP(range2fitCR=None)
     >>> method.sigmaP, method.ocr
     (930.59421331855, 12.407922844247334)
-    >>> method.getSigmaP(range2fitLCR=[700, 10000])
+    >>> method.getSigmaP(range2fitCR=[700, 10000])
     >>> method.sigmaP, method.ocr
     (718.9365936678746, 9.585821248904995)
     """
@@ -281,9 +303,9 @@ class WangAndFrost(BeckerEtAl):
         BeckerEtAl.__init__(self, data)
         return
 
-    def calculateDissipatedE(self, range2fitLCR=None):
+    def calculateDissipatedE(self, range2fitCR=None):
         """
-        Calculate the accumulative dissipated strain energy corrected.
+        Calculate the accumulative dissipated strain energy corrected (ADSEC).
 
         Obtain the correction value based on the linear regression on the ADSE
         line or the tangent line to the steepest point of the cubic spline that
@@ -291,12 +313,14 @@ class WangAndFrost(BeckerEtAl):
 
         Parameters
         ----------
-        range2fitLCR : list, tuple or array (length=2), optional
-            Initial and final pressures between which the first-order
-            polynomial will be fit to the data on the large compressibility
-            range (LCR) (i.e. post-yield range). If None, the LCR will be
-            automatically obtained with the same criteria used for calculating
-            the recompression index with the ``Data`` class. The default is
+        range2fitCR : list, tuple or array (length=2), optional
+            Initial and final pressures between which the first order
+            polynomial will be fit to the data on the compression range (CR)
+            (range beyond the preconsolidation pressure). If None, the CR will
+            be automatically fit to the same points used for calculating the
+            compression index with the ``Data`` class only if it was calculated
+            with a linear fit, otherwise, the steepest slope of the cubic
+            spline that passes through the data will be used. The default is
             None.
 
         Returns
@@ -315,9 +339,9 @@ class WangAndFrost(BeckerEtAl):
         self.data.raw['ADSE'] = self.data.raw['ATSE'] - self.data.raw['AESE']
         # -- Calculating value for correcting ADSE (OR: corrVal)
         self.data.clean()  # Updating data without unloads
-        if range2fitLCR is not None or self.data.fitCc:
-            s2fitTE = self.data.cleaned['stress'][self.maskLCR]
-            w2fitTE = self.data.cleaned['ATSE'][self.maskLCR]
+        if range2fitCR is not None or self.data.fitCc:
+            s2fitTE = self.data.cleaned['stress'][self.maskCR]
+            w2fitTE = self.data.cleaned['ATSE'][self.maskCR]
             self.corrVal, _ = polyfit(s2fitTE, w2fitTE, deg=1)
         else:
             cs = CubicSpline(x=self.data.cleaned['stress'],
@@ -335,18 +359,20 @@ class WangAndFrost(BeckerEtAl):
         self.data.clean()
         return
 
-    def getSigmaP(self, range2fitLCR=None):
+    def getSigmaP(self, range2fitCR=None):
         """
         Return the value of the preconsolidation pressure or yield stress.
 
         Parameters
         ----------
-        range2fitLCR : list, tuple or array (length=2), optional
-            Initial and final pressures between which the first-order
-            polynomial will be fit to the data on the large compressibility
-            range (LCR) (i.e. post-yield range). If None, the LCR will be
-            automatically obtained with the same criteria used for calculating
-            the recompression index with the ``Data`` class. The default is
+        range2fitCR : list, tuple or array (length=2), optional
+            Initial and final pressures between which the first order
+            polynomial will be fit to the data on the compression range (CR)
+            (range beyond the preconsolidation pressure). If None, the CR will
+            be automatically fit to the same points used for calculating the
+            compression index with the ``Data`` class only if it was calculated
+            with a linear fit, otherwise, the steepest slope of the cubic
+            spline that passes through the data will be used. The default is
             None.
 
         Returns
@@ -355,29 +381,29 @@ class WangAndFrost(BeckerEtAl):
             Figure with the development of the method and the results.
 
         """
-        # -- Post yield range or large compressibility range
-        self.maskLCR = np.full(len(self.data.cleaned), False)
-        if range2fitLCR is not None or self.data.fitCc:
-            if range2fitLCR is not None:
-                idxInitLCR = self.data.findStressIdx(
-                    stress2find=range2fitLCR[0], cleanedData=True)
-                idxEndLCR = self.data.findStressIdx(
-                    stress2find=range2fitLCR[1], cleanedData=True)
-                self.maskLCR[idxInitLCR: idxEndLCR] = True
+        # -- Post yield range or compression range (CR)
+        self.maskCR = np.full(len(self.data.cleaned), False)
+        if range2fitCR is not None or self.data.fitCc:  # Using a linear fit
+            if range2fitCR is not None:
+                idxInitCR = self.data.findStressIdx(
+                    stress2find=range2fitCR[0], cleanedData=True)
+                idxEndCR = self.data.findStressIdx(
+                    stress2find=range2fitCR[1], cleanedData=True)
+                self.maskCR[idxInitCR: idxEndCR] = True
             elif self.data.fitCc:
-                self.maskLCR = self.data.maskCc
+                self.maskCR = self.data.maskCc
             # -- Calculatting the dissipated strain energy corrected (ADSEC)
-            self.calculateDissipatedE(range2fitLCR)
+            self.calculateDissipatedE(range2fitCR)
             # -- Linear regresion of points on post yield line
-            sigmaLCR = self.data.cleaned['stress'][self.maskLCR]
-            disspE = self.data.cleaned['ADSEC'][self.maskLCR]
-            lcrInt, lcrSlope = polyfit(sigmaLCR, disspE, deg=1)
-            r2LCR = r2_score(
-                y_true=disspE, y_pred=polyval(sigmaLCR, [lcrInt, lcrSlope]))
+            sigmaCR = self.data.cleaned['stress'][self.maskCR]
+            disspE = self.data.cleaned['ADSEC'][self.maskCR]
+            lcrInt, lcrSlope = polyfit(sigmaCR, disspE, deg=1)
+            r2CR = r2_score(
+                y_true=disspE, y_pred=polyval(sigmaCR, [lcrInt, lcrSlope]))
 
         else:  # Using the steepest point of a cubic spline
             # -- Calculatting the dissipated strain energy corrected (ADSEC)
-            self.calculateDissipatedE(range2fitLCR)
+            self.calculateDissipatedE(range2fitCR)
             sigma = self.data.cleaned['stress']
             cs = CubicSpline(x=sigma, y=self.data.cleaned['ADSEC'])
             sigmaCS = np.linspace(sigma.iloc[0], sigma.iloc[-1], 500)
@@ -391,41 +417,46 @@ class WangAndFrost(BeckerEtAl):
         self.sseSigmaP = polyval(self.sigmaP, [lcrInt, lcrSlope])
         self.ocr = self.sigmaP / self.data.sigmaV
 
-        xLCR = np.linspace(self.sigmaP, self.data.cleaned['stress'].iloc[-1])
-        yLCR = polyval(xLCR, [lcrInt, lcrSlope])
+        xCR = np.linspace(self.sigmaP, self.data.cleaned['stress'].iloc[-1])
+        yCR = polyval(xCR, [lcrInt, lcrSlope])
 
         # -- Plot compresibility curve
         fig = plt.figure(figsize=[9, 4.8])
-        ax = fig.add_axes([0.08, 0.12, 0.65, 0.85])
+        ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
         ax.plot(self.data.raw['stress'], self.data.raw['ATSEC'], ls=':',
-                marker='v', lw=0.3, c='gray', mfc='w', label='Total energy')
+                marker='v', lw=0.5, c='gray', mfc='w', label='Total energy')
         ax.plot(self.data.raw['stress'], self.data.raw['AESE'], ls=':',
-                marker='s', lw=0.3, c='gray', mfc='w', label='Elastic energy')
-        ax.plot(self.data.raw['stress'], self.data.raw['ADSEC'], ls='--',
-                marker='o', lw=1, c='k', mfc='w', label='Dissipated energy')
-        ax.hlines(y=abs(self.corrVal), xmin=0, xmax=self.sigmaP, lw=0.8,
-                  color='darkred')
-        # Large compressibility range
-        ax.plot(xLCR, yLCR, ls='--', c='darkgreen', lw=0.8,
-                label='Postyield line')
-        if range2fitLCR is not None or self.data.fitCc:
-            ax.plot(sigmaLCR, disspE, ls='', marker='x', c='darkgreen',
-                    label=f'Data for linear fit\n(R$^2={r2LCR:.3f}$)')
+                marker='s', lw=0.5, c='gray', mfc='w', label='Elastic energy')
+        ax.plot(self.data.raw['stress'], self.data.raw['ADSEC'], ls=':',
+                marker='o', lw=1.5, c='k', mfc='w', label='Dissipated energy')
+        ax.hlines(y=abs(self.corrVal), xmin=0, xmax=self.sigmaP, lw=1.125,
+                  color=colors[2])
+        # Compression range
+        ax.plot(xCR, yCR, ls='-', c=colors[1], lw=1.125,
+                label='Compression range')
+        if range2fitCR is not None or self.data.fitCc:
+            ax.plot(sigmaCR, disspE, ls='', marker='x', c=colors[1],
+                    label=f'Data for linear fit\n(R$^2={r2CR:.3f}$)')
         # Other plots
         ax.plot(self.data.sigmaV, -self.corrVal, ls='', marker='|', c='r',
-                ms=15, mfc='w', label=str().join([
+                ms=15, mfc='w', mew=1.5, label=str().join([
                     r'$\sigma^\prime_\mathrm{v0}=$ ',
                     f'{self.data.sigmaV:.0f} kPa']))
-        ax.plot(self.sigmaP, self.sseSigmaP, ls='', marker='D', c='r', ms=5,
-                mfc='w', label=str().join([r'$\sigma^\prime_\mathrm{p}=$ ',
-                                           f'{self.sigmaP:.0f} kPa\n',
-                                           f'OCR= {self.ocr:.1f}']))
+        ax.plot(self.sigmaP, self.sseSigmaP, ls='', marker='o', c=colors[0],
+                ms=7, mfc='w', mew=1.5,
+                label=str().join([r'$\sigma^\prime_\mathrm{p}=$ ',
+                                  f'{self.sigmaP:.0f} kPa\n',
+                                  f'OCR= {self.ocr:.1f}']))
         # Other details
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
         ax.set(ylabel='Specific strain energy [kPa]',
-               xlabel=str().join(['Vertical effective stress ',
-                                  r'$(\sigma^\prime_\mathrm{v})$ [kPa]']))
-        ax.grid(True, ls='--', lw=0.5)
-        ax.legend(bbox_to_anchor=(1.02, 0.5), loc=6,
+               xlabel=str().join(['Vertical effective stress, ',
+                                  r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
+        ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.grid(False)
+        ax.legend(bbox_to_anchor=(1.125, 0.5), loc=6,
                   title=r"\textbf{Wang \& Frost method}")
         return fig
 

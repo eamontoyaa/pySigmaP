@@ -16,3 +16,8 @@ History
 ------------------
 
 * Minors updates to html documentation.
+
+0.1.3 (2020-11-30)
+------------------
+
+* Improvements of figures styles.

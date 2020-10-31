@@ -30,6 +30,10 @@ import matplotlib.ticker as mtick
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12
 plt.rcParams['text.usetex'] = True
+# High-contrast qualitative colour scheme
+colors = ('#DDAA33',  # yellow
+          '#BB5566',  # red
+          '#004488')  # blue
 
 
 class Bilog():
@@ -49,24 +53,26 @@ class Bilog():
 
     Examples
     --------
-    >>> data = Data(pd.read_csv('testData/testData.csv'), sigmaV=75)
+    >>> urlCSV = ''.join(['https://raw.githubusercontent.com/eamontoyaa/',
+    >>>                   'data4testing/main/pysigmap/testData.csv'])
+    >>> data = Data(pd.read_csv(urlCSV), sigmaV=75)
     >>> method = Bilog(data)
     >>> method.getSigmaP(opt=1)  # Butterfield (1979)
     >>> method.sigmaP, method.ocr
     (433.29446692547555, 5.777259559006341)
-    >>> method.getSigmaP(range2fitLCR=[1000, 9000], opt=1) # Butterfield
+    >>> method.getSigmaP(range2fitCR=[1000, 9000], opt=1) # Butterfield
     >>> method.sigmaP, method.ocr
     (399.3361458736937, 5.324481944982582)
     >>> method.getSigmaP(opt=2)  # Oikawa (1987)
     >>> method.sigmaP, method.ocr
     (433.2944669254731, 5.777259559006308)
-    >>> method.getSigmaP(range2fitLCR=[1000, 9000], opt=2)  # Oikawa
+    >>> method.getSigmaP(range2fitCR=[1000, 9000], opt=2)  # Oikawa
     >>> method.sigmaP, method.ocr
     (399.3361458736935, 5.32448194498258)
     >>> method.getSigmaP(opt=3)  # Onitsuka et al. (1995)
     >>> method.sigmaP, method.ocr
     (433.2944669254753, 5.777259559006338)
-    >>> method.getSigmaP(range2fitLCR=[1000, 9000], opt=3)  # Onitsuka et al.
+    >>> method.getSigmaP(range2fitCR=[1000, 9000], opt=3)  # Onitsuka et al.
     >>> method.sigmaP, method.ocr
     (399.3361458736939, 5.324481944982585)
     """
@@ -76,24 +82,28 @@ class Bilog():
         self.data = data
         return
 
-    def getSigmaP(self, range2fitSCR=None, range2fitLCR=None, opt=1):
+    def getSigmaP(self, range2fitRR=None, range2fitCR=None, opt=1):
         """
         Return the value of the preconsolidation pressure or yield stress.
 
         Parameters
         ----------
-        range2fitSCR : list, tuple or array (length=2), optional
-            Initial and final pressures between which the first-order
-            polynomial will be fit to the compressibility curve on the small
-            compressibility range (SCR). If None, the SCR will be fit from the
-            first point of the compresibility curve to the point before the
-            in-situ vertical effective stress. The default is None.
-        range2fitLCR : list, tuple or array (length=2), optional
-            Initial and final pressures between which the first-order
-            polynomial will be fit to the compressibility curve on the normally
-            consolidated line (NCL), also knonw as the "large compressibility
-            range (LCR)". If None, the NCL will be automatically fit to the
-            last three points of the data.
+        range2fitRR : list, tuple or array (length=2), optional
+            Initial and final pressures between which the first order
+            polynomial will be fit to the data on the recompression range (RR)
+            (range before the preconsolidation pressure). If None, the first
+            order polynomial will be fit from the first point of the curve to
+            the point before the in-situ vertical effective stress. The default
+            is None.
+        range2fitCR : list, tuple or array (length=2), optional
+            Initial and final pressures between which the first order
+            polynomial will be fit to the data on the compression range (CR)
+            (range beyond the preconsolidation pressure). If None, the CR will
+            be automatically fit to the same points used for calculating the
+            compression index with the ``Data`` class only if it was calculated
+            with a linear fit, otherwise, the steepest slope of the cubic
+            spline that passes through the data will be used. The default is
+            None.
         opt : int, optional
             Integer value to indicate which bilogarithmic method will be used.
             Butterfield (opt=1), Oikawa (opt=2) and Onitsuka et al. (opt=3).
@@ -116,33 +126,24 @@ class Bilog():
 
         # def ticks(x, pos): return f'$e^{np.log(x):.0f}$'
 
-        if range2fitSCR is None:  # Indices for fitting the SCR line
-            idxInitSCR = 1
-            idxEndSCR = self.data.findStressIdx(
+        if range2fitRR is None:  # Indices for fitting the RR line
+            idxInitRR = 1
+            idxEndRR = self.data.findStressIdx(
                 stress2find=self.data.sigmaV, cleanedData=True) - 1
         else:
-            idxInitSCR = self.data.findStressIdx(
-                stress2find=range2fitSCR[0], cleanedData=True)
-            idxEndSCR = self.data.findStressIdx(
-                stress2find=range2fitSCR[1], cleanedData=True)
+            idxInitRR = self.data.findStressIdx(
+                stress2find=range2fitRR[0], cleanedData=True)
+            idxEndRR = self.data.findStressIdx(
+                stress2find=range2fitRR[1], cleanedData=True) - 1
 
-        # -- Linear regresion of points on the small compressibility range(SCR)
-        sigmaSCR = self.data.cleaned['stress'][idxInitSCR: idxEndSCR+1]
-        volSCR = self.data.cleaned['vol'][idxInitSCR: idxEndSCR+1]
-        sigmaSCRlog = transformX(sigmaSCR, opt)
-        volSCRlog = transformY(volSCR, opt)
-        p1_0, p1_1 = polyfit(sigmaSCRlog, volSCRlog, deg=1)
-        r2SCR = r2_score(
-            y_true=volSCRlog, y_pred=polyval(sigmaSCRlog, [p1_0, p1_1]))
-
-        if range2fitLCR is None:  # Indices for fitting the NCL line
-            idxInitNCL = -3
-            idxEndNCL = None
-        else:
-            idxInitNCL = self.data.findStressIdx(
-                stress2find=range2fitLCR[0], cleanedData=True)
-            idxEndNCL = self.data.findStressIdx(
-                stress2find=range2fitLCR[1], cleanedData=True)
+        # -- Linear regresion of points on the recompression range(RR)
+        sigmaRR = self.data.cleaned['stress'][idxInitRR: idxEndRR+1]
+        volRR = self.data.cleaned['vol'][idxInitRR: idxEndRR+1]
+        sigmaRRlog = transformX(sigmaRR, opt)
+        volRRlog = transformY(volRR, opt)
+        p1_0, p1_1 = polyfit(sigmaRRlog, volRRlog, deg=1)
+        r2RR = r2_score(
+            y_true=volRRlog, y_pred=polyval(sigmaRRlog, [p1_0, p1_1]))
 
         # -- Cubic spline that passes through the data
         sigmaLog = transformX(self.data.cleaned['stress'][1:], opt)
@@ -151,25 +152,25 @@ class Bilog():
         # Specific volume at sigma V
         volSigmaV = cs(transformX(self.data.sigmaV, opt))
 
-        # -- Post yield range or large compressibility range
-        self.maskLCR = np.full(len(self.data.cleaned), False)
-        if range2fitLCR is not None or self.data.fitCc:
-            if range2fitLCR is not None:
-                idxInitLCR = self.data.findStressIdx(
-                    stress2find=range2fitLCR[0], cleanedData=True)
-                idxEndLCR = self.data.findStressIdx(
-                    stress2find=range2fitLCR[1], cleanedData=True)
-                self.maskLCR[idxInitLCR: idxEndLCR] = True
+        # -- Compression range (CR)
+        self.maskCR = np.full(len(self.data.cleaned), False)
+        if range2fitCR is not None or self.data.fitCc:  # Using a linear fit
+            if range2fitCR is not None:
+                idxInitCR = self.data.findStressIdx(
+                    stress2find=range2fitCR[0], cleanedData=True)
+                idxEndCR = self.data.findStressIdx(
+                    stress2find=range2fitCR[1], cleanedData=True)
+                self.maskCR[idxInitCR: idxEndCR] = True
             elif self.data.fitCc:
-                self.maskLCR = self.data.maskCc
+                self.maskCR = self.data.maskCc
             # -- Linear regresion of points on post yield line
-            sigmaLCR = self.data.cleaned['stress'][self.maskLCR]
-            sigmaLCRlog = transformX(sigmaLCR, opt)
-            volLCR = self.data.cleaned['vol'][self.maskLCR]
-            volLCRlog = transformY(volLCR, opt)
-            lcrInt, lcrSlope = polyfit(sigmaLCRlog, volLCRlog, deg=1)
-            r2LCR = r2_score(y_true=volLCRlog,
-                             y_pred=polyval(volLCRlog, [lcrInt, lcrSlope]))
+            sigmaCR = self.data.cleaned['stress'][self.maskCR]
+            sigmaCRlog = transformX(sigmaCR, opt)
+            volCR = self.data.cleaned['vol'][self.maskCR]
+            volCRlog = transformY(volCR, opt)
+            lcrInt, lcrSlope = polyfit(sigmaCRlog, volCRlog, deg=1)
+            r2CR = r2_score(y_true=volCRlog,
+                            y_pred=polyval(sigmaCRlog, [lcrInt, lcrSlope]))
 
         else:  # Using the steepest point of a cubic spline
             sigmaCS = np.linspace(sigmaLog.iloc[0], sigmaLog.iloc[-1], 500)
@@ -187,48 +188,54 @@ class Bilog():
         self.ocr = self.sigmaP / self.data.sigmaV
 
         # -- Lines of the bilogarithmic methods
-        xLCR = np.linspace(self.sigmaP, self.data.cleaned['stress'].iloc[-1])
-        yLCR = polyval(transformX(xLCR, opt), [lcrInt, lcrSlope])
+        xCR = np.linspace(self.sigmaP, self.data.cleaned['stress'].iloc[-1])
+        yCR = polyval(transformX(xCR, opt), [lcrInt, lcrSlope])
 
-        # Small compressibility range
-        xSCRFit = np.linspace(sigmaSCR.iloc[0], self.sigmaP)
-        ySCRFit = polyval(transformX(xSCRFit, opt), [p1_0, p1_1])
+        # Recompression range
+        xRRFit = np.linspace(sigmaRR.iloc[0], self.sigmaP)
+        yRRFit = polyval(transformX(xRRFit, opt), [p1_0, p1_1])
 
         # -- plot compresibility curve
         fig = plt.figure(figsize=[9, 4.8])
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
         ax.semilogx(self.data.raw['stress'][1:],
-                    transformY(self.data.raw['vol'][1:], opt),
-                    basex=xScl, ls='--', marker='o', lw=1, c='k', mfc='w',
-                    label='Data')
+                    transformY(self.data.raw['vol'][1:], opt), basex=xScl,
+                    ls=(0, (1, 1)), marker='o', lw=1.5, c='k', mfc='w',
+                    label='Compressibility curve')
         methods = ['Butterfield', 'Oikawa', r'Onitsuka \textit{et al.}']
-        # Small compressibility range
-        ax.plot(xSCRFit, ySCRFit, ls='--', c='darkred', lw=0.8,
-                label='Small compressibility range')
-        ax.plot(sigmaSCR, volSCRlog, ls='', marker='+', c='darkred',
-                label=f'Data for linear fit\n(R$^2={r2SCR:.3f}$)')
-        # Large compressibility range
-        ax.plot(xLCR, yLCR, ls='--', c='darkgreen', lw=0.8,
-                label='Large compressibility range')
-        if range2fitLCR is not None or self.data.fitCc:
-            ax.plot(sigmaLCR, volLCRlog, ls='', marker='x', c='darkgreen',
-                    label=f'Data for linear fit\n(R$^2={r2LCR:.3f}$)')
+        # Recompression range
+        ax.plot(xRRFit, yRRFit, ls='-', c=colors[2], lw=1.125,
+                label='Recompression range')
+        ax.plot(sigmaRR, volRRlog, ls='', marker='+', c=colors[2],
+                label=f'Data for linear fit\n(R$^2={r2RR:.3f}$)')
+        # Compression range
+        ax.plot(xCR, yCR, ls='-', c=colors[1], lw=1.125,
+                label='Compression range')
+        if range2fitCR is not None or self.data.fitCc:
+            ax.plot(sigmaCR, volCRlog, ls='', marker='x', c=colors[1],
+                    label=f'Data for linear fit\n(R$^2={r2CR:.3f}$)')
         # Other plots
         ax.plot(self.data.sigmaV, volSigmaV, ls='', marker='|', c='r', ms=15,
-                mfc='w', label=str().join([r'$\sigma^\prime_\mathrm{v0}=$ ',
-                                           f'{self.data.sigmaV:.0f} kPa']))
-        ax.plot(self.sigmaP, self.vSigmaP, ls='', marker='D', c='r', ms=5,
-                mfc='w', label=str().join([r'$\sigma^\prime_\mathrm{p}=$ ',
-                                           f'{self.sigmaP:.0f} kPa\n',
-                                           f'OCR= {self.ocr:.1f}']))
+                mfc='w', mew=1.5,
+                label=str().join([r'$\sigma^\prime_\mathrm{v0}=$ ',
+                                  f'{self.data.sigmaV:.0f} kPa']))
+        ax.plot(self.sigmaP, self.vSigmaP, ls='', marker='o', c=colors[0],
+                ms=7, mfc='w', mew=1.5, label=str().join([
+                    r'$\sigma^\prime_\mathrm{p}=$ ',
+                    f'{self.sigmaP:.0f} kPa\n',
+                    f'OCR= {self.ocr:.1f}']))
         # Other details
+        ax.spines['top'].set_visible(False)
+        ax.spines['right'].set_visible(False)
         ax.set(ylabel=f'Specific volume, {yLabel}',
-               xlabel=str().join(['Vertical effective stress ',
-                                  r'$(\sigma^\prime_\mathrm{v})$ [kPa]']))
+               xlabel=str().join(['Vertical effective stress, ',
+                                  r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
         ax.xaxis.set_major_formatter(mtick.ScalarFormatter())
-        ax.grid(True, which="both", ls='--', lw=0.5)
-        ax.legend(bbox_to_anchor=(1.04, 0.5), loc=6, title=str().join([
-            r"\textbf{", f"{methods[opt-1]}", "'s method}"]))
+        # ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+        ax.grid(False)
+        ax.legend(bbox_to_anchor=(1.125, 0.5), loc=6, title=str().join([
+            r"\textbf{", f"{methods[opt-1]}", " method}"]))
         return fig
 
 
