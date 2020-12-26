@@ -1,9 +1,9 @@
 """
 ``bilog.py`` module.
 
-Contains the class and its methods for determinig the preconsolidation
-pressure from a consolidation test by the bilogarithminc methods proposed by
-Butterfield (1979), Oikawa (1987) and Onitsuka et al. (1995).
+Contains the class and its methods for interpreting the preconsolidation
+pressure from a compressibility curve via the Bilogarithmic methods proposed
+by Butterfield (1979), Oikawa (1987) and Onitsuka et al. (1995).
 
 References
 ----------
@@ -41,14 +41,14 @@ class Bilog():
     ``Bilog`` class.
 
     When the object is instanced, the method ``getSigmaP()`` calculates the
-    preconsolidation pressure by the method proposed by Boone (2010) based on
-    the parameters of the method.  See the method documentation for more
-    information.
+    preconsolidation pressure by the methods proposed by Butterfield (1979),
+    Oikawa (1987) and Onitsuka et al. (1995) based on the parameters of the
+    method. See the method documentation for more information.
 
     Attributes
     ----------
     data : Object instanced from the ``Data`` class
-        Contains the data structure from the consolidation test. See the class
+        Contains the data structure from the oedometer test. See the class
         documentation for more information.
 
     Examples
@@ -84,22 +84,22 @@ class Bilog():
 
     def getSigmaP(self, range2fitRR=None, range2fitCR=None, opt=1):
         """
-        Return the value of the preconsolidation pressure or yield stress.
+        Return the value of the preconsolidation pressure.
 
         Parameters
         ----------
         range2fitRR : list, tuple or array (length=2), optional
             Initial and final pressures between which the first order
-            polynomial will be fit to the data on the recompression range (RR)
-            (range before the preconsolidation pressure). If None, the first
-            order polynomial will be fit from the first point of the curve to
-            the point before the in-situ vertical effective stress. The default
-            is None.
+            polynomial will be fitted to the data on the recompression range
+            (RR) (range before the preconsolidation pressure). If None, the
+            first order polynomial will be fitted from the first point of the
+            curve to the point before the in situ effective vertical stress.
+            The default is None.
         range2fitCR : list, tuple or array (length=2), optional
             Initial and final pressures between which the first order
-            polynomial will be fit to the data on the compression range (CR)
-            (range beyond the preconsolidation pressure). If None, the CR will
-            be automatically fit to the same points used for calculating the
+            polynomial will be fitted to the data on the compression range (CR)
+            (range above the preconsolidation pressure). If None, the CR will
+            be automatically fitted to the same points used for calculating the
             compression index with the ``Data`` class only if it was calculated
             with a linear fit, otherwise, the steepest slope of the cubic
             spline that passes through the data will be used. The default is

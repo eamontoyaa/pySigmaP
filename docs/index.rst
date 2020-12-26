@@ -12,6 +12,7 @@ pySigmaP documentation
    contributing
    authors
    history
+   references
 
 Indices and tables
 ==================

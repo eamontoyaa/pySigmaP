@@ -1,8 +1,8 @@
 """
 ``energy.py`` module.
 
-Contains the class and its methods for determinig the preconsolidation
-pressure from a consolidation test by the energy methods proposed by
+Contains the classes and theis methods for interpreting the preconsolidation
+pressure from a compressibility curve via the strain energy methods proposed by
 Becker et al. (1987), Morin (1988) and Wang & Frost (2004).
 
 References
@@ -52,7 +52,7 @@ class BeckerEtAl():
     Attributes
     ----------
     data : Object instanced from the ``Data`` class.
-        Contains the data structure from the consolidation test. See the class
+        Contains the data structure from the oedometer test. See the class
         documentation for more information.
 
     Examples
@@ -99,28 +99,28 @@ class BeckerEtAl():
     def getSigmaP(self, range2fitRR=None, range2fitCR=None, zoom=3,
                   morinFormulation=False):
         """
-        Return the value of the preconsolidation pressure or yield stress.
+        Return the value of the preconsolidation pressure.
 
         Parameters
         ----------
         range2fitRR : list, tuple or array (length=2), optional
             Initial and final pressures between which the first order
-            polynomial will be fit to the data on the recompression range (RR)
-            (range before the preconsolidation pressure). If None, the first
-            order polynomial will be fit from the first point of the curve to
-            the point before the in-situ vertical effective stress. The default
-            is None.
+            polynomial will be fitted to the data on the recompression range
+            (RR) (range before the preconsolidation pressure). If None, the
+            first order polynomial will be fitted from the first point of the
+            curve to the point before the in situ effective vertical stress.
+            The default is None.
         range2fitCR : list, tuple or array (length=2), optional
             Initial and final pressures between which the first order
-            polynomial will be fit to the data on the compression range (CR)
-            (range beyond the preconsolidation pressure). If None, the CR will
-            be automatically fit to the same points used for calculating the
+            polynomial will be fitted to the data on the compression range (CR)
+            (range above the preconsolidation pressure). If None, the CR will
+            be automatically fitted to the same points used for calculating the
             compression index with the ``Data`` class only if it was calculated
             with a linear fit, otherwise, the steepest slope of the cubic
             spline that passes through the data will be used. The default is
             None.
         zoom : int, optional
-            Value to magnify the view of the firsts points of the curve and the
+            Value to magnify the view of the first points of the curve and the
             preconsolidation pressure in an inset window. The default is 3.
         morinFormulation : bool, optional
             Boolean to specify if the work per unit volume of solids (Morin
@@ -315,11 +315,11 @@ class WangAndFrost(BeckerEtAl):
         ----------
         range2fitCR : list, tuple or array (length=2), optional
             Initial and final pressures between which the first order
-            polynomial will be fit to the data on the compression range (CR)
-            (range beyond the preconsolidation pressure). If None, the CR will
-            be automatically fit to the same points used for calculating the
+            polynomial will be fitted to the data on the compression range (CR)
+            (range above the preconsolidation pressure). If None, the CR will
+            be automatically fitted to the same points used for calculating the
             compression index with the ``Data`` class only if it was calculated
-            with a linear fit, otherwise, the steepest slope of the cubic
+            with a linear fitted, otherwise, the steepest slope of the cubic
             spline that passes through the data will be used. The default is
             None.
 
@@ -361,15 +361,15 @@ class WangAndFrost(BeckerEtAl):
 
     def getSigmaP(self, range2fitCR=None):
         """
-        Return the value of the preconsolidation pressure or yield stress.
+        Return the value of the preconsolidation pressure.
 
         Parameters
         ----------
         range2fitCR : list, tuple or array (length=2), optional
             Initial and final pressures between which the first order
-            polynomial will be fit to the data on the compression range (CR)
-            (range beyond the preconsolidation pressure). If None, the CR will
-            be automatically fit to the same points used for calculating the
+            polynomial will be fitted to the data on the compression range (CR)
+            (range above the preconsolidation pressure). If None, the CR will
+            be automatically fitted to the same points used for calculating the
             compression index with the ``Data`` class only if it was calculated
             with a linear fit, otherwise, the steepest slope of the cubic
             spline that passes through the data will be used. The default is

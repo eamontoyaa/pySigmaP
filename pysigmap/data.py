@@ -1,9 +1,8 @@
 """
 ``data.py`` module.
 
-Contains the class and its methods for determinig the preconsolidation
-pressure from a consolidation test by the method proposed by
-Casagrande (1963).
+Contains the class and its methods for loading and managing the data of the
+compressibility curve
 """
 
 # -- Required modules
@@ -35,21 +34,21 @@ class Data:
     Attributes
     ----------
     rawData : pandas DataFrame
-        Data from the incremental loading consolidation test. It includes three
+        Data from the incremental loading oedometer test. It includes three
         series with the following and strict order: effective vertical stress,
-        axial strain and void ratio. The first row must include the initial
+        axial strain and void ratio. The first row must include the on-table
         void ratio of the specimen.
     sigmaV : float
-        Vertical effective stress of the tested sample.
+        In situ effective vertical stress of the specimen.
     strainPercent : bool, optional
         Boolean to specify if the axial strain of the row data is in percent or
         not. The default is True.
-    reloadStage : bool, optional
-        Boolean to specify if the test included a reload stage. The default is
-        True.
-    doubleUnload : bool, optional
-        Boolean to specify if the test included two reload stages. The default
+    reloading : bool, optional
+        Boolean to specify if the test included a reloading stage. The default
         is True.
+    secondUnloading : bool, optional
+        Boolean to specify if the test included two reloading stages. The
+        default is True.
 
     Examples
     --------
@@ -77,14 +76,14 @@ class Data:
     0.05398842524225007
     """
 
-    def __init__(self, rawData, sigmaV, strainPercent=True, reloadStage=True,
-                 doubleUnload=True):
+    def __init__(self, rawData, sigmaV, strainPercent=True, reloading=True,
+                 secondUnloading=True):
         """Initialize the class."""
         self.raw = rawData
         self.sigmaV = sigmaV
         self.strainPercent = strainPercent
-        self.reloadStage = reloadStage
-        self.doubleUnload = doubleUnload
+        self.reloading = reloading
+        self.secondUnloading = secondUnloading
         self.preprocessing()
         self.getBreakIndices()
         self.clean()
@@ -94,7 +93,7 @@ class Data:
 
     def preprocessing(self):
         """
-        Rename the series names and set the initial void ratio to an attribute.
+        Rename the series names and create the on-table void ratio attribute.
 
         Returns
         -------
@@ -105,7 +104,7 @@ class Data:
         # Removing percentage format to strain values
         if self.strainPercent:
             self.raw['strain'] = self.raw['strain'].divide(100)
-        # initial void ratio
+        # On-table (initial) void ratio
         self.e_0 = self.raw['e'].iloc[0]
         return
 
@@ -115,10 +114,10 @@ class Data:
 
         The break indices are the following:
 
-            - brkIdx1: The start of the first unload
-            - brkIdx2: The end of the first unload (start of the first reload)
-            - brkIdx3: Point on the NCL after first reload
-            - brkIdx4: Index of the last point on the NCL
+            - brkIdx1: Start of the first unloading stage
+            - brkIdx2: End of the first unloading stage
+            - brkIdx3: Point on the compression range after the first reloading
+            - brkIdx4: Index of the last point on the compression range
 
         Returns
         -------
@@ -127,18 +126,19 @@ class Data:
         for i in self.raw.index[:-1]:
             if self.raw['stress'][i+1] > self.raw['stress'][i] and \
                     self.raw['stress'][i+2] < self.raw['stress'][i+1]:
-                brkIdx1 = i+1  # brkIdx1: start of the first unload
+                brkIdx1 = i+1  # brkIdx1: start of the first unloading
                 break
-        if self.reloadStage:
+        if self.reloading:
             for i in self.raw.index[brkIdx1+1:-1]:
                 if self.raw['stress'][i+1] < self.raw['stress'][i] and \
                         self.raw['stress'][i+2] > self.raw['stress'][i+1]:
-                    brkIdx2 = i+1  # brkIdx2: end of the first unload
+                    brkIdx2 = i+1  # brkIdx2: end of the first unloading
                     break
-            # brkIdx3: Point on the NCL after the first reload
+            # brkIdx3: Point on the NCL after the first reloading
             brkIdx3 = self.raw.query(f'stress == stress[{brkIdx1}]').index[1]
             # brkIdx4: index of the last point on the NCL
             brkIdx4 = self.raw.query('stress == stress.max()').index[0]
+            self.secondUnloading = False
         else:
             brkIdx2 = self.raw.index[-1]
             brkIdx3 = None
@@ -152,13 +152,13 @@ class Data:
 
     def clean(self):
         """
-        Generate a cleaned copy of the raw data without unload-reload stages.
+        Clean the raw data removing the unloading and reloading stages.
 
         Returns
         -------
         None.
         """
-        if self.reloadStage:
+        if self.reloading:
             self.cleaned = pd.concat(
                 [self.raw[0: self.brkIdx1+1],
                  self.raw[self.brkIdx3+1: self.brkIdx4+1]])
@@ -205,8 +205,8 @@ class Data:
         ----------
         range2fitCc : list, tuple or array (length=2), optional
             Initial and final pressures between which the first-order
-            polynomial will be fit to the data on the normally consolidated
-            line (NCL). If None, the Cc index will be calculated as the
+            polynomial will be fit to the data on the compression range. If
+            None, the Cc index will be calculated as the
             steepest slope of the cubic spline that passes through the data.
             The default is None.
 
@@ -253,9 +253,10 @@ class Data:
         ----------
         opt : TYPE, optional
             Integer value to indicate which method will be used. Using only
-            two points, the beginig and end of the unluad stage (opt=1); using
-            all the points of the first unload stage (opt=2); using the points
-            of the first unload and reload staged (opt=3). The default is 1.
+            two points, the start and end of the unluading stage (opt=1); using
+            all the points of the first unloading stage (opt=2); using the
+            points of the first unloading and reloading stages (opt=3). The
+            default is 1.
 
         Returns
         -------
@@ -284,13 +285,13 @@ class Data:
 
     def plot(self):
         """
-        Plot the compressibility curve, the Cc index and the Cr index.
+        Plot the compressibility curve, Cc and Cr indices.
 
         Returns
         -------
         fig : matplotlib.figure.Figure
-            Figure that includes the compressibility curve, the Cc index, the
-            Cr index and the vertical effective stress of the sample tested.
+            Figure that includes the compressibility curve, Cc, Cr and the in
+            situ effective vertical stress of the specimen.
         """
         # -- plotting
         fig = plt.figure(figsize=[9, 4.8])

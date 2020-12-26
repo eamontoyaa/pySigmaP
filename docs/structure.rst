@@ -1,12 +1,9 @@
 Structure
 =========
 
-**pySigmaP** was written under the object-oriented paradigm and is divided into six modules,
-one of them contains the class to load and manage the data of the compressibility curve, the other
-five contain the classes that solve the nine methods for getting the preconsolidation pressure
-or yield stress.
+**pySigmaP** is written under the object-oriented paradigm and divided into six modules. One of them contains the class to load and manage the data of the compressibility curve, and the other five contain the classes to interpret the preconsolidation pressure via nine different methods.
 
-Each module is well documented and contains basic usage examples.
+Each module is documented and basic examples are illustrated.
 
 .. toctree::
    :maxdepth: 10

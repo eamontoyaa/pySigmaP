@@ -22,7 +22,10 @@ setup_requirements = [ ]
 test_requirements = [ ]
 
 setup(
-    author="Exneyder Andres Montoya Araque",
+    author=str().join(['Exneyder A. Montoya Araque\n',
+                       'Alan J. Aparicio-Ortube\n',
+                       'David G. Zapata-Medina\n',
+                       'Luis G. Arboleda-Monsalve']),
     author_email='eamontoyaa@gmail.com',
     python_requires='>=3.5',
     classifiers=[
@@ -51,6 +54,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/eamontoyaa/pysigmap',
-    version='0.1.3',
+    version='0.1.6',
     zip_safe=False,
 )

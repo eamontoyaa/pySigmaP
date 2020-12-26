@@ -1,8 +1,9 @@
 """
 ``casagrande.py`` module.
 
-Contains the class and its methods for determinig the preconsolidation
-pressure from a consolidation test by the method proposed by Casagrande (1963).
+Contains the class and its methods for interpreting the preconsolidation
+pressure from a compressibility curve via the method proposed by Casagrande
+(1963).
 
 References
 ----------
@@ -42,7 +43,7 @@ class Casagrande:
     Attributes
     ----------
     data : Object instanced from the ``Data`` class.
-        Contains the data structure from the consolidation test. See the class
+        Contains the data structure from the oedometer test. See the class
         documentation for more information.
 
     Examples
@@ -69,7 +70,7 @@ class Casagrande:
 
     def getSigmaP(self, mcp=None, range2fitFOP=None, loglog=True):
         """
-        Return the value of the preconsolidation pressure or yield stress.
+        Return the value of the preconsolidation pressure.
 
         Parameters
         ----------
@@ -79,7 +80,7 @@ class Casagrande:
             The default is None.
         range2fitFOP : list, tuple or array (length=2), optional
             Initial and final pressures between which the fourth-order
-            polynomial (FOP) will be fit to the compressibility curve to
+            polynomial (FOP) will be fitted to the compressibility curve to
             calculate the maximum curvature point (MCP). If None, the MCP will
             be obtained using a cubic spline that passes through the data. The
             default is None.

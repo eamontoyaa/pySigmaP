@@ -1,8 +1,8 @@
 """
 ``boone.py`` module.
 
-Contains the class and its methods for determinig the preconsolidation
-pressure from a consolidation test by the method proposed by Boone (2010).
+Contains the class and its methods for interpreting the preconsolidation
+pressure from a compressibility curve via the method proposed by Boone (2010).
 
 References
 ----------
@@ -38,7 +38,7 @@ class Boone():
     Attributes
     ----------
     data : Object instanced from the ``Data`` class.
-        Contains the data structure from the consolidation test. See the class
+        Contains the data structure from the oedometer test. See the class
         documentation for more information.
 
     Examples
@@ -59,7 +59,7 @@ class Boone():
 
     def getSigmaP(self):
         """
-        Return the value of the preconsolidation pressure or yield stress.
+        Return the value of the preconsolidation pressure.
 
         Returns
         -------

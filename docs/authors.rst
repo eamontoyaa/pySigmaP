@@ -12,4 +12,4 @@ Contributors/Advisors
 ---------------------
 
 * David G. Zapata-Medina, Civ.Eng., MSc., PhD. <dgzapata@unal.edu.co>
-* Luis G. Arboleda-Monsalve, Civ.Eng., MSc., PhD. <luis.Arboleda@ucf.edu>
+* Luis G. Arboleda-Monsalve, Civ.Eng., MSc., PhD. <luis.arboleda@ucf.edu>
