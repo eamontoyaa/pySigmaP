@@ -14,20 +14,16 @@ requirements = [
         'numpy >= 1.19.1',
         'scipy >= 1.5.0',
         'matplotlib >= 3.2.2',
-        'pandas >= 1.1.1',
-        'scikit-learn >= 0.23.2']
+        'pandas >= 1.1.1']
 
 setup_requirements = [ ]
 
 test_requirements = [ ]
 
 setup(
-    author=str().join(['Exneyder A. Montoya Araque\n',
-                       'Alan J. Aparicio-Ortube\n',
-                       'David G. Zapata-Medina\n',
-                       'Luis G. Arboleda-Monsalve']),
+    author="E. A. Montoya-Araque, A. J. Aparicio-Orutbe, D. G. Zapata-Medina and L. G. Arboleda-Monsalve",
     author_email='eamontoyaa@gmail.com',
-    python_requires='>=3.5',
+    python_requires='>=3.7',
     classifiers=[
         'Development Status :: 2 - Pre-Alpha',
         'Intended Audience :: Developers',
