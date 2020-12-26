@@ -14,14 +14,15 @@ requirements = [
         'numpy >= 1.19.1',
         'scipy >= 1.5.0',
         'matplotlib >= 3.2.2',
-        'pandas >= 1.1.1']
+        'pandas >= 1.1.1',
+        'scikit-learn >= 0.23.2']
 
 setup_requirements = [ ]
 
 test_requirements = [ ]
 
 setup(
-    author="E. A. Montoya-Araque, A. J. Aparicio-Orutbe, D. G. Zapata-Medina and L. G. Arboleda-Monsalve",
+    author="E. A. Montoya-Araque,\nA. J. Aparicio-Orutbe,\nD. G. Zapata-Medina and\nL. G. Arboleda-Monsalve",
     author_email='eamontoyaa@gmail.com',
     python_requires='>=3.7',
     classifiers=[
@@ -50,6 +51,6 @@ setup(
     test_suite='tests',
     tests_require=test_requirements,
     url='https://github.com/eamontoyaa/pysigmap',
-    version='0.1.6',
+    version='0.1.7',
     zip_safe=False,
 )

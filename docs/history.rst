@@ -36,3 +36,8 @@ History
 ------------------
 
 * Minor updates to html documentation and improvements to figures.
+
+0.1.7 (2020-12-26)
+------------------
+
+* Fix configuration files.
