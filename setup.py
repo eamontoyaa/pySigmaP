@@ -21,7 +21,7 @@ setup_requirements = [ ]
 test_requirements = [ ]
 
 setup(
-    author="E. A. Montoya-Araque, A. J. Aparicio-Orutbe, D. G. Zapata-Medina and L. G. Arboleda-Monsalve",
+    author="E. A. Montoya-Araque\\\A. J. Aparicio-Orutbe\\\D. G. Zapata-Medina\\\L. G. Arboleda-Monsalve",
     author_email='eamontoyaa@gmail.com',
     python_requires='>=3.7',
     classifiers=[
