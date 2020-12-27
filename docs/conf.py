@@ -59,7 +59,7 @@ master_doc = 'index'
 # General information about the project.
 project = 'pySigmaP'
 copyright = "2020, E. A. Montoya-Araque, A. J. Aparicio-Orutbe, D. G. Zapata-Medina, L. G. Arboleda-Monsalve and Universidad Nacional de Colombia"
-author = "E. A. Montoya-Araque,\nA. J. Aparicio-Orutbe,\nD. G. Zapata-Medina and\nL. G. Arboleda-Monsalve"
+author = "E. A. Montoya-Araque\\\A. J. Aparicio-Orutbe\\\D. G. Zapata-Medina\\\L. G. Arboleda-Monsalve"
 
 # The version info for the project you're documenting, acts as replacement
 # for |version| and |release|, also used in various other places throughout
@@ -140,7 +140,7 @@ latex_elements = {
 latex_documents = [
     (master_doc, 'pysigmap.tex',
      'pySigmaP Documentation',
-     'E. A. Montoya-Araque,\nA. J. Aparicio-Orutbe,\nD. G. Zapata-Medina and\nL. G. Arboleda-Monsalve', 'manual'),
+     'E. A. Montoya-Araque\\\A. J. Aparicio-Orutbe\\\D. G. Zapata-Medina\\\L. G. Arboleda-Monsalve', 'manual'),
 ]
 
 
