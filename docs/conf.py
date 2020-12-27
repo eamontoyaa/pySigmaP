@@ -58,7 +58,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'pySigmaP'
-copyright = "2020, E. A. Montoya-Araque, A. J. Aparicio-Orutbe, D. G. Zapata-Medina, L. G. Arboleda-Monsalve and Universidad Nacional de Colombia"
+copyright = "2020, E. A. Montoya-Araque, A. J. Aparicio-Ortube, D. G. Zapata-Medina, L. G. Arboleda-Monsalve and Universidad Nacional de Colombia"
 author = "E. A. Montoya-Araque\\\A. J. Aparicio-Ortube\\\D. G. Zapata-Medina\\\L. G. Arboleda-Monsalve"
 
 # The version info for the project you're documenting, acts as replacement
