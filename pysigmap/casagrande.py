@@ -19,7 +19,7 @@ from numpy.polynomial.polynomial import polyfit, polyval
 from scipy.interpolate import CubicSpline
 from scipy.signal import find_peaks
 import matplotlib.pyplot as plt
-from sklearn.metrics import r2_score
+from mstools.mstools import r2_score
 import matplotlib.ticker as mtick
 
 plt.rcParams['font.family'] = 'Serif'

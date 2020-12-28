@@ -11,8 +11,9 @@ from numpy.polynomial.polynomial import polyfit, polyval
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 import pandas as pd
-from sklearn.metrics import r2_score
+from mstools.mstools import r2_score
 import matplotlib.ticker as mtick
+
 
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12

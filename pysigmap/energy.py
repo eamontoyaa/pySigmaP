@@ -28,7 +28,7 @@ from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-from sklearn.metrics import r2_score
+from mstools.mstools import r2_score
 import matplotlib.ticker as mtick
 
 plt.rcParams['font.family'] = 'Serif'

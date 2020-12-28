@@ -14,7 +14,8 @@ requirements = [
         'numpy >= 1.19.1',
         'scipy >= 1.5.0',
         'matplotlib >= 3.2.2',
-        'pandas >= 1.1.1']
+        'pandas >= 1.1.1',
+        'mstools >= 0.1.0']
 
 setup_requirements = [ ]
 

@@ -51,7 +51,7 @@ Requirements
 The code was written in Python 3. The packages `numpy <http://www.numpy.org/>`_,
 `scipy <https://www.scipy.org/>`_, `matplotlib <https://matplotlib.org/>`_, 
 `pandas <https://pandas.pydata.org/>`_
-and `scikit-learn <https://scikit-learn.org/stable/>`_ are
+and `mstools <https://mstools.readthedocs.io/>`_ are
 required for using **pySigmaP**. All of them are
 downloadable from the PyPI repository by opening a terminal and typing the
 following code lines:
@@ -63,7 +63,7 @@ following code lines:
     pip install scipy
     pip install matplotlib
     pip install pandas
-    pip install scikit-learn
+    pip install mstools
 
 `LaTeX <https://www.latex-project.org/>`_ is also required to render fonts. Linux distributions
 usually have pre-installed LaTeX; however, for Microsoft Windows operative systems, it is suggested

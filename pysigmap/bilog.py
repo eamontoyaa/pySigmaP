@@ -24,7 +24,7 @@ import numpy as np
 from numpy.polynomial.polynomial import polyfit, polyval
 from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
-from sklearn.metrics import r2_score
+from mstools.mstools import r2_score
 import matplotlib.ticker as mtick
 
 plt.rcParams['font.family'] = 'Serif'
