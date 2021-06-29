@@ -34,7 +34,3 @@ Features
 * `PyPI <https://pypi.org/project/pysigmap>`_
 * `GitHub <https://github.com/eamontoyaa/pysigmap>`_
 * Open source and free software: `BSD-2-Clause License <https://opensource.org/licenses/BSD-2-Clause>`_.
-
-
-
-

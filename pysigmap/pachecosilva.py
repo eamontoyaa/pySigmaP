@@ -20,13 +20,11 @@ from scipy.interpolate import CubicSpline
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
+from pysigmap import figsize, colors
+
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12
 plt.rcParams['text.usetex'] = True
-# High-contrast qualitative colour scheme
-colors = ('#DDAA33',  # yellow
-          '#BB5566',  # red
-          '#004488')  # blue
 
 
 class PachecoSilva():
@@ -84,13 +82,13 @@ class PachecoSilva():
         self.eSigmaP = yPt2
 
         # -- plotting
-        fig = plt.figure(figsize=[9, 4.8])
+        fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
         ax.plot(self.data.raw['stress'][1:], self.data.raw['e'][1:],
                 ls=(0, (1, 1)), marker='o', lw=1.5, c='k', mfc='w',
                 label='Compressibility curve')
         ax.hlines(y=self.data.e_0, xmin=0, xmax=xPt1, ls='--', lw=1.125,
-                  color=colors[2], label=f'$e_0 = {self.data.e_0:.2f}$')
+                  color=colors[2], label=f'$e_0 = {self.data.e_0:.3f}$')
         # Compression index
         x4Cc = np.linspace(xPt1, self.data.cleaned['stress'].iloc[-1])
         y4Cc = -self.data.idxCc * np.log10(x4Cc) + self.data.idxCcInt
@@ -123,13 +121,13 @@ class PachecoSilva():
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.set(xscale='log', ylabel='Void ratio, $e$',
-               xlabel=str().join(['Vertical effective stress, ',
+               xlabel=str().join(['Effective vertical stress, ',
                                   r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
         ax.xaxis.set_major_formatter(mtick.ScalarFormatter())
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.grid(False)
         ax.legend(bbox_to_anchor=(1.125, 0.5), loc=6,
-                  title=r"\textbf{Pacheco-Silva method}")
+                  title=r"\textbf{Pacheco Silva method}")
         return fig
 
 

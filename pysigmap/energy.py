@@ -31,13 +31,11 @@ from mpl_toolkits.axes_grid1.inset_locator import mark_inset
 from mstools.mstools import r2_score
 import matplotlib.ticker as mtick
 
+from pysigmap import figsize, colors
+
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12
 plt.rcParams['text.usetex'] = True
-# High-contrast qualitative colour scheme
-colors = ('#DDAA33',  # yellow
-          '#BB5566',  # red
-          '#004488')  # blue
 
 
 class BeckerEtAl():
@@ -195,7 +193,7 @@ class BeckerEtAl():
         self.ocr = self.sigmaP / self.data.sigmaV
 
         # -- Plot compresibility curve
-        fig = plt.figure(figsize=[9, 4.8])
+        fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
         ax.plot(self.data.raw['stress'], self.data.raw['work'], ls=(0, (1, 1)),
                 marker='o', lw=1.5, c='k', mfc='w', label='Data')  # all data
@@ -228,7 +226,7 @@ class BeckerEtAl():
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.set(ylabel='Total work per unit volume, $W$ [kJ m$^{-3}$]',
-               xlabel=str().join(['Vertical effective stress, ',
+               xlabel=str().join(['Effective vertical stress, ',
                                   r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
         ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
@@ -421,7 +419,7 @@ class WangAndFrost(BeckerEtAl):
         yCR = polyval(xCR, [lcrInt, lcrSlope])
 
         # -- Plot compresibility curve
-        fig = plt.figure(figsize=[9, 4.8])
+        fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
         ax.plot(self.data.raw['stress'], self.data.raw['ATSEC'], ls=':',
                 marker='v', lw=0.5, c='gray', mfc='w', label='Total energy')
@@ -451,7 +449,7 @@ class WangAndFrost(BeckerEtAl):
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.set(ylabel='Specific strain energy [kPa]',
-               xlabel=str().join(['Vertical effective stress, ',
+               xlabel=str().join(['Effective vertical stress, ',
                                   r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
         ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())

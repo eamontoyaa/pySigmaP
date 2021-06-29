@@ -27,13 +27,11 @@ import matplotlib.pyplot as plt
 from mstools.mstools import r2_score
 import matplotlib.ticker as mtick
 
+from pysigmap import figsize, colors
+
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12
 plt.rcParams['text.usetex'] = True
-# High-contrast qualitative colour scheme
-colors = ('#DDAA33',  # yellow
-          '#BB5566',  # red
-          '#004488')  # blue
 
 
 class Bilog():
@@ -196,10 +194,10 @@ class Bilog():
         yRRFit = polyval(transformX(xRRFit, opt), [p1_0, p1_1])
 
         # -- plot compresibility curve
-        fig = plt.figure(figsize=[9, 4.8])
+        fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
         ax.semilogx(self.data.raw['stress'][1:],
-                    transformY(self.data.raw['vol'][1:], opt), basex=xScl,
+                    transformY(self.data.raw['vol'][1:], opt), base=xScl,
                     ls=(0, (1, 1)), marker='o', lw=1.5, c='k', mfc='w',
                     label='Compressibility curve')
         methods = ['Butterfield', 'Oikawa', r'Onitsuka \textit{et al.}']
@@ -228,7 +226,7 @@ class Bilog():
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.set(ylabel=f'Specific volume, {yLabel}',
-               xlabel=str().join(['Vertical effective stress, ',
+               xlabel=str().join(['Effective vertical stress, ',
                                   r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
         ax.xaxis.set_major_formatter(mtick.ScalarFormatter())
         # ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())

@@ -14,14 +14,12 @@ import pandas as pd
 from mstools.mstools import r2_score
 import matplotlib.ticker as mtick
 
+from pysigmap import figsize, colors
+
 
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12
 plt.rcParams['text.usetex'] = True
-# High-contrast qualitative colour scheme
-colors = ('#DDAA33',  # yellow
-          '#BB5566',  # red
-          '#004488')  # blue
 
 
 class Data:
@@ -295,7 +293,7 @@ class Data:
             situ effective vertical stress of the specimen.
         """
         # -- plotting
-        fig = plt.figure(figsize=[9, 4.8])
+        fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
         ax.plot(self.raw['stress'][1:], self.raw['e'][1:], ls=(0, (1, 1)),
                 marker='o', lw=1.5, c='k', mfc='w', label='Experimental data')
@@ -328,7 +326,7 @@ class Data:
         ax.spines['top'].set_visible(False)
         ax.spines['right'].set_visible(False)
         ax.set(xscale='log', ylabel='Void ratio, $e$',
-               xlabel=str().join(['Vertical effective stress, ',
+               xlabel=str().join(['Effective vertical stress, ',
                                   r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
         ax.xaxis.set_major_formatter(mtick.ScalarFormatter())
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())

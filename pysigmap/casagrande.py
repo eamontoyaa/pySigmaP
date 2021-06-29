@@ -22,13 +22,11 @@ import matplotlib.pyplot as plt
 from mstools.mstools import r2_score
 import matplotlib.ticker as mtick
 
+from pysigmap import figsize, colors
+
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12
 plt.rcParams['text.usetex'] = True
-# High-contrast qualitative colour scheme
-colors = ('#DDAA33',  # yellow
-          '#BB5566',  # red
-          '#004488')  # blue
 
 
 class Casagrande:
@@ -112,7 +110,7 @@ class Casagrande:
         sigmaCS = np.linspace(sigmaLog.iloc[0], sigmaLog.iloc[-1], 100)
         if range2fitFOP is None:  # Using a cubic spline
             x4FOP = 10**sigmaCS
-            # -- Curvature function k(x) = f''(x)/(1+(f'(X))²)³/²
+            # -- Curvature function k(x) = f''(x)/(1+(f'(x))²)³/²
             curvature = abs(cs(sigmaCS, 2)) / (1+cs(sigmaCS, 1)**2)**(3/2)
             maxCurvIdx = find_peaks(curvature, distance=500)[0][0]
             # maxCurvIdx = np.argmax(curvature)  # Max. Curvature index
@@ -166,9 +164,8 @@ class Casagrande:
         self.ocr = self.sigmaP / self.data.sigmaV
 
         # -- plotting
-        fig = plt.figure(figsize=[9, 4.8])
+        fig = plt.figure(figsize=figsize)
         ax1 = fig.add_axes([0.08, 0.12, 0.55, 0.85])
-        ax2 = ax1.twinx()  # second y axis for curvature function
         l1 = ax1.plot(self.data.raw['stress'][1:], self.data.raw['e'][1:],
                       ls=(0, (1, 1)), marker='o', lw=1.5, c='k', mfc='w',
                       label='Compressibility curve')
@@ -183,28 +180,30 @@ class Casagrande:
         l2 = ax1.plot(x4Cc, y4Cc, ls='-', lw=1.5, color=colors[1],
                       label=str().join([r'$C_\mathrm{c}=$',
                                         f'{self.data.idxCc:.3f}']))
+        allLayers = l1 + l2
         if self.data.fitCc:
             l3 = ax1.plot(
                 self.data.cleaned['stress'].iloc[self.data.maskCc],
                 self.data.cleaned['e'].iloc[self.data.maskCc], ls='',
                 marker='x', color=colors[1],
                 label=f'Data for linear fit\n(R$^2={self.data.r2Cc:.3f}$)')
+            allLayers.insert(2, l3[0])
         if mcp is None:  # Curvature
+            ax2 = ax1.twinx()  # second y axis for curvature function
             l6 = ax2.plot(x4FOP, curvature, ls='--', c=colors[0], lw=1.125,
                           mfc='w', label='Curvature')
-
-        if mcp is not None:
-            allLayers = l1 + l2
-        elif range2fitFOP is not None:  # Fourth order polynomial fit
-            l4 = ax1.plot(x4FOP, y4FOP, ls='--', lw=1.125, color=colors[2],
-                          label=r'$4^\mathrm{th}$-order polynomial')
-            l5 = ax1.plot(sigmaFOP, eFOP, ls='', marker='+', c=colors[2],
-                          label=f'Data for linear fit\n(R$^2={r2FOP:.3f}$)')
-            allLayers = l1 + l2 + l4 + l5 + l6
+            # if range2fitFOP is None:  # Curvature
+            if range2fitFOP is not None:  # FOP fit
+                l4 = ax1.plot(x4FOP, y4FOP, ls='--', lw=1.125, color=colors[2],
+                              label=r'$4^\mathrm{th}$-order polynomial')
+                l5 = ax1.plot(sigmaFOP, eFOP, ls='', marker='+', c=colors[2],
+                              label=f'Data for linear fit\n(R$^2={r2FOP:.3f}$)'
+                              )
+                allLayers += l4 + l5
+            allLayers += l6
         else:  # Cubic spline
-            allLayers = l1 + l2 + l6
-        if self.data.fitCc:
-            allLayers.insert(2, l3[0])
+            # allLayers = l1 + l2
+            pass
         # Other plots
         l7 = ax1.plot(self.data.sigmaV, self.data.eSigmaV, ls='', marker='|',
                       c='r', ms=15, mfc='w', mew=1.5,
@@ -220,20 +219,21 @@ class Casagrande:
         allLayers += l7 + l8 + l9
         # Legend
         labs = [layer.get_label() for layer in allLayers]
-        ax2.legend(allLayers, labs, bbox_to_anchor=(1.125, 0.5), loc=6,
+        ax1.legend(allLayers, labs, bbox_to_anchor=(1.125, 0.5), loc=6,
                    title=r"\textbf{Casagrande method}")
         # Other details
         ax1.spines['top'].set_visible(False)
         ax1.spines['right'].set_visible(False)
-        ax2.spines['top'].set_visible(False)
         ax1.set(xscale='log', ylabel=r'Void ratio, $e$',
-                xlabel=str().join(['Vertical effective stress, ',
+                xlabel=str().join(['Effective vertical stress, ',
                                   r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
         ax1.xaxis.set_major_formatter(mtick.ScalarFormatter())
         ax1.yaxis.set_minor_locator(mtick.AutoMinorLocator())
-        ax2.yaxis.set_minor_locator(mtick.AutoMinorLocator())
-        ax2.set(ylabel='Curvature $(k)$')
         ax1.grid(False)
+        if mcp is None:  # Curvature
+            ax2.yaxis.set_minor_locator(mtick.AutoMinorLocator())
+            ax2.set(ylabel='Curvature, $k$')
+            ax2.spines['top'].set_visible(False)
         return fig
 
 

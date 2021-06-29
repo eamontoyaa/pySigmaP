@@ -1,0 +1,20 @@
+[tool.poetry]
+name = "pysigmap"
+version = "0.1.8"
+description = "Application software for calculating the preconsolidation pressure from the incremental loading oedometer testing"
+authors = ["E. A. Montoya-Araque, A. J. Aparicio-Ortube, D. G. Zapata-Medina and L. G. Arboleda-Monsalve"]
+license = "2-clause BSD license"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+numpy = "^1.19.1"
+scipy = "^1.5.0"
+matplotlib = "^3.2.2"
+pandas = "^1.1.1"
+mstools = "^0.1.0"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

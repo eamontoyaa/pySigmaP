@@ -135,3 +135,4 @@ otherData/testDataW&F.csv
 otherData/testData0.csv
 tests/test_pysigmap.py
 testZapataData.py
+article_appendix.py
