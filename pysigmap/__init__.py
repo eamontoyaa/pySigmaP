@@ -12,4 +12,4 @@ figsize = [10, 5.3]
 # High-contrast qualitative colour scheme
 colors = ('#DDAA33',  # yellow
           '#BB5566',  # red
-          '#004418')  # blue
+          '#004488')  # blue

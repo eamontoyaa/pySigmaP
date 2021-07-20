@@ -123,6 +123,7 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+otherData/
 otherData/testData1.csv
 otherData/testData11.csv
 otherData/testData2.csv
@@ -135,4 +136,3 @@ otherData/testDataW&F.csv
 otherData/testData0.csv
 tests/test_pysigmap.py
 testZapataData.py
-article_appendix.py
