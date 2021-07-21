@@ -41,3 +41,8 @@ History
 ------------------
 
 * Use mstools instead of scikit-learn for linear regression coefficient of determination.
+
+0.1.8 (2021-06-28)
+------------------
+
+* Minor improvements to figures.

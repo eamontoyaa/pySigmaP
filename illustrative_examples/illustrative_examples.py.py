@@ -1,13 +1,12 @@
 """
 appendix.py module.
 
-Appendix of the article 'An Open Source Application Software to Determine the
+This script contains the code used to generate the figures related to the
+section 'Software Functionalities and Illustrative Examples' of the paper
+'An Open Source Application Software to Determine the
 Preconsolidation Pressure of Soils in Incremental Loading Oedometer Testing:
 pySigmaP' by Exneyder A. Montoya-Araque, A. J. Aparicio-Ortube, David G.
 Zapata-Medina and  Luis G. Arboleda-Monsalve.
-
-This script contains the code used to generate the figures related to the
-section 'Software Functionalities and Illustrative Examples'.
 """
 
 # Block 1: Input loading data from an external file

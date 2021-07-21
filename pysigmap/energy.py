@@ -1,7 +1,7 @@
 """
 ``energy.py`` module.
 
-Contains the classes and theis methods for interpreting the preconsolidation
+Contains the classes and theis methods to determine the preconsolidation
 pressure from a compressibility curve via the strain energy methods proposed by
 Becker et al. (1987), Morin (1988) and Wang & Frost (2004).
 

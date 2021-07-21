@@ -1,7 +1,7 @@
 """
 ``bilog.py`` module.
 
-Contains the class and its methods for interpreting the preconsolidation
+Contains the class and its methods to determine the preconsolidation
 pressure from a compressibility curve via the Bilogarithmic methods proposed
 by Butterfield (1979), Oikawa (1987) and Onitsuka et al. (1995).
 

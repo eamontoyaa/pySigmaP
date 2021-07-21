@@ -1,7 +1,7 @@
 """
 ``boone.py`` module.
 
-Contains the class and its methods for interpreting the preconsolidation
+Contains the class and its methods to determine the preconsolidation
 pressure from a compressibility curve via the method proposed by Boone (2010).
 
 References
