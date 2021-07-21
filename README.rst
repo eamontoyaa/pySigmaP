@@ -20,7 +20,7 @@ pySigmaP
 
 
 
-Open-source application software developed in Python3 for interpreting
+Open-source application software developed in Python3 to determine
 the preconsolidation pressure of soils in incremental loading (IL) oedometer
 testing. **pySigmaP** includes nine methods such as the method of Casagrande,
 Pacheco Silva, Butterfield, Oikawa, Becker et al., Morin, Onitsuka et al.,
