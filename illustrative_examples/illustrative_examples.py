@@ -9,6 +9,7 @@ pySigmaP' by Exneyder A. Montoya-Araque, A. J. Aparicio-Ortube, David G.
 Zapata-Medina and  Luis G. Arboleda-Monsalve.
 """
 
+# Block 1: Input loading data from an external file
 from pysigmap.energy import WangAndFrost
 from pysigmap.energy import BeckerEtAl
 from pysigmap.bilog import Bilog
