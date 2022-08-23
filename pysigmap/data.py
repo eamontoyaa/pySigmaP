@@ -9,18 +9,27 @@ compressibility curve.
 import numpy as np
 from numpy.polynomial.polynomial import polyfit, polyval
 from scipy.interpolate import CubicSpline
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mtick
 import pandas as pd
 from mstools.mstools import r2_score
-import matplotlib.ticker as mtick
 
 from pysigmap import figsize, colors
 
 
 plt.style.use("default")
-plt.rcParams['font.family'] = 'Serif'
-plt.rcParams['font.size'] = 12
-plt.rcParams['text.usetex'] = True
+mpl.rcParams.update(
+    {
+        "text.usetex": False,  # Use mathtext, not LaTeX
+        "font.family": "serif",  # Use the Computer modern font
+        "font.serif": "cmr10",
+        "mathtext.fontset": "cm",
+        "axes.formatter.use_mathtext": True,
+        "axes.unicode_minus": False,
+        "backend": "TKAgg",
+    }
+)
 
 
 class Data:
@@ -76,8 +85,14 @@ class Data:
     0.05398842524225007
     """
 
-    def __init__(self, rawData, sigmaV, strainPercent=True, reloading=True,
-                 secondUnloading=True):
+    def __init__(
+        self,
+        rawData,
+        sigmaV,
+        strainPercent=True,
+        reloading=True,
+        secondUnloading=True,
+    ):
         """Initialize the class."""
         self.raw = rawData
         self.sigmaV = sigmaV
@@ -100,12 +115,12 @@ class Data:
         None.
         """
         # Standardizing series names
-        self.raw.columns = ['stress', 'strain', 'e']
+        self.raw.columns = ["stress", "strain", "e"]
         # Removing percentage format to strain values
         if self.strainPercent:
-            self.raw['strain'] = self.raw['strain'].divide(100)
+            self.raw["strain"] = self.raw["strain"].divide(100)
         # On-table (initial) void ratio
-        self.e_0 = self.raw['e'].iloc[0]
+        self.e_0 = self.raw["e"].iloc[0]
         return
 
     def getBreakIndices(self):
@@ -124,20 +139,24 @@ class Data:
         None.
         """
         for i in self.raw.index[:-1]:
-            if self.raw['stress'][i+1] > self.raw['stress'][i] and \
-                    self.raw['stress'][i+2] < self.raw['stress'][i+1]:
-                brkIdx1 = i+1  # brkIdx1: start of the first unloading
+            if (
+                self.raw["stress"][i + 1] > self.raw["stress"][i]
+                and self.raw["stress"][i + 2] < self.raw["stress"][i + 1]
+            ):
+                brkIdx1 = i + 1  # brkIdx1: start of the first unloading
                 break
         if self.reloading:
-            for i in self.raw.index[brkIdx1+1:-1]:
-                if self.raw['stress'][i+1] < self.raw['stress'][i] and \
-                        self.raw['stress'][i+2] > self.raw['stress'][i+1]:
-                    brkIdx2 = i+1  # brkIdx2: end of the first unloading
+            for i in self.raw.index[brkIdx1 + 1 : -1]:
+                if (
+                    self.raw["stress"][i + 1] < self.raw["stress"][i]
+                    and self.raw["stress"][i + 2] > self.raw["stress"][i + 1]
+                ):
+                    brkIdx2 = i + 1  # brkIdx2: end of the first unloading
                     break
             # brkIdx3: Point on the NCL after the first reloading
-            brkIdx3 = self.raw.query(f'stress == stress[{brkIdx1}]').index[1]
+            brkIdx3 = self.raw.query(f"stress == stress[{brkIdx1}]").index[1]
             # brkIdx4: index of the last point on the NCL
-            brkIdx4 = self.raw.query('stress == stress.max()').index[0]
+            brkIdx4 = self.raw.query("stress == stress.max()").index[0]
             self.secondUnloading = False
         else:
             brkIdx2 = self.raw.index[-1]
@@ -160,14 +179,17 @@ class Data:
         """
         if self.reloading:
             self.cleaned = pd.concat(
-                [self.raw[0: self.brkIdx1+1],
-                 self.raw[self.brkIdx3+1: self.brkIdx4+1]])
+                [
+                    self.raw[0 : self.brkIdx1 + 1],
+                    self.raw[self.brkIdx3 + 1 : self.brkIdx4 + 1],
+                ]
+            )
         else:
-            self.cleaned = self.raw[0: self.brkIdx1+1]
+            self.cleaned = self.raw[0 : self.brkIdx1 + 1]
         self.cleaned.reset_index(drop=True, inplace=True)  # update idx
         # -- Cubic spline that passes through the data
-        sigmaLog = np.log10(self.cleaned['stress'][1:])
-        cs = CubicSpline(x=sigmaLog, y=self.cleaned['e'][1:])
+        sigmaLog = np.log10(self.cleaned["stress"][1:])
+        cs = CubicSpline(x=sigmaLog, y=self.cleaned["e"][1:])
         self.eSigmaV = float(cs(np.log10(self.sigmaV)))  # void ratio at sigmaV
         return
 
@@ -190,11 +212,11 @@ class Data:
         """
         if stress2find == 0:
             idx = 1
-        elif stress2find > self.raw['stress'].max():
+        elif stress2find > self.raw["stress"].max():
             idx = None
         else:
             data4finding = self.cleaned if cleanedData else self.raw
-            idx = data4finding.query(f'stress >= {stress2find}').index[0]
+            idx = data4finding.query(f"stress >= {stress2find}").index[0]
         return idx
 
     def compressionIdx(self, range2fitCc=None):
@@ -216,29 +238,34 @@ class Data:
         """
         self.range2fitCc = range2fitCc
         if range2fitCc is None:  # Using a cubic spline
-            sigmaLog = np.log10(self.cleaned['stress'][1:])
-            cs = CubicSpline(x=sigmaLog, y=self.cleaned['e'][1:])
+            sigmaLog = np.log10(self.cleaned["stress"][1:])
+            cs = CubicSpline(x=sigmaLog, y=self.cleaned["e"][1:])
             sigmaCS = np.linspace(sigmaLog.iloc[0], sigmaLog.iloc[-1], 500)
             steepestSlopeIdx = np.argmin(cs(sigmaCS, 1))
             idxCc = cs(sigmaCS, 1)[steepestSlopeIdx]
-            idxCcInt = cs(sigmaCS[steepestSlopeIdx]) - \
-                idxCc*sigmaCS[steepestSlopeIdx]
+            idxCcInt = (
+                cs(sigmaCS[steepestSlopeIdx])
+                - idxCc * sigmaCS[steepestSlopeIdx]
+            )
             self.fitCc = False
         else:  # Using a linear fit of a first-order polynomial
             idxInitCc = self.findStressIdx(
-                stress2find=range2fitCc[0], cleanedData=True)
+                stress2find=range2fitCc[0], cleanedData=True
+            )
             idxEndCc = self.findStressIdx(
-                stress2find=range2fitCc[1], cleanedData=True)
+                stress2find=range2fitCc[1], cleanedData=True
+            )
             maskCc = np.full(len(self.cleaned), False)
-            maskCc[idxInitCc: idxEndCc] = True
+            maskCc[idxInitCc:idxEndCc] = True
             self.maskCc = maskCc
             # -- Linear regresion
-            sigmaCc = self.cleaned['stress'].iloc[maskCc]
+            sigmaCc = self.cleaned["stress"].iloc[maskCc]
             sigmaCclog = np.log10(sigmaCc)
-            eCc = self.cleaned['e'].iloc[maskCc]
+            eCc = self.cleaned["e"].iloc[maskCc]
             idxCcInt, idxCc = polyfit(sigmaCclog, eCc, deg=1)
             r2Cc = r2_score(
-                y_true=eCc, y_pred=polyval(sigmaCclog, [idxCcInt, idxCc]))
+                y_true=eCc, y_pred=polyval(sigmaCclog, [idxCcInt, idxCc])
+            )
             self.r2Cc = r2Cc
             self.fitCc = True
         self.idxCc = abs(idxCc)
@@ -267,16 +294,17 @@ class Data:
             maskCr[self.brkIdx1] = True
             maskCr[self.brkIdx2] = True
         elif opt == 2:
-            maskCr[self.brkIdx1: self.brkIdx2+1] = True
+            maskCr[self.brkIdx1 : self.brkIdx2 + 1] = True
         elif opt == 3:
-            maskCr[self.brkIdx1: self.brkIdx3+1] = True
+            maskCr[self.brkIdx1 : self.brkIdx3 + 1] = True
         # -- Linear regresion
-        sigmaCr = self.raw['stress'].iloc[maskCr]
+        sigmaCr = self.raw["stress"].iloc[maskCr]
         sigmaCrlog = np.log10(sigmaCr)
-        eCr = self.raw['e'].iloc[maskCr]
+        eCr = self.raw["e"].iloc[maskCr]
         idxCrInt, idxCr = polyfit(sigmaCrlog, eCr, deg=1)
         r2Cr = r2_score(
-            y_true=eCr, y_pred=polyval(sigmaCrlog, [idxCrInt, idxCr]))
+            y_true=eCr, y_pred=polyval(sigmaCrlog, [idxCrInt, idxCr])
+        )
         self.maskCr = maskCr
         self.r2Cr = r2Cr
         self.idxCr = abs(idxCr)
@@ -296,44 +324,94 @@ class Data:
         # -- plotting
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
-        ax.plot(self.raw['stress'][1:], self.raw['e'][1:], ls=(0, (1, 1)),
-                marker='o', lw=1.5, c='k', mfc='w', label='Experimental data')
-        ax.plot(self.sigmaV, self.eSigmaV, ls='', marker='|', c='r', ms=15,
-                mfc='w', mew=1.5,
-                label=str().join([r'$\sigma^\prime_\mathrm{v_0}=$ ',
-                                  f'{self.sigmaV:.0f} kPa']))
+        ax.plot(
+            self.raw["stress"][1:],
+            self.raw["e"][1:],
+            ls=(0, (1, 1)),
+            marker="o",
+            lw=1.5,
+            c="k",
+            mfc="w",
+            label="Experimental data",
+        )
+        ax.plot(
+            self.sigmaV,
+            self.eSigmaV,
+            ls="",
+            marker="|",
+            c="r",
+            ms=15,
+            mfc="w",
+            mew=1.5,
+            label=str().join(
+                ["$\sigma^\prime_\mathrm{v_0}=$ ", f"{self.sigmaV:.0f} kPa"]
+            ),
+        )
         # Compression index
         x4Cc = np.linspace(
-            self.cleaned['stress'].iloc[-4], self.cleaned['stress'].iloc[-1])
+            self.cleaned["stress"].iloc[-4], self.cleaned["stress"].iloc[-1]
+        )
         y4Cc = -self.idxCc * np.log10(x4Cc) + self.idxCcInt
-        ax.plot(x4Cc, y4Cc, ls='-', lw=1.125, color=colors[1],
-                label=str().join([r'$C_\mathrm{c}=$', f'{self.idxCc:.3f}']))
+        ax.plot(
+            x4Cc,
+            y4Cc,
+            ls="-",
+            lw=1.125,
+            color=colors[1],
+            label=str().join(["$C_\mathrm{c}=$", f"{self.idxCc:.3f}"]),
+        )
         if self.fitCc:
-            ax.plot(self.cleaned['stress'].iloc[self.maskCc],
-                    self.cleaned['e'].iloc[self.maskCc], ls='', marker='x',
-                    color=colors[1],
-                    label=f'Data for linear fit\n(R$^2={self.r2Cc:.3f}$)')
+            ax.plot(
+                self.cleaned["stress"].iloc[self.maskCc],
+                self.cleaned["e"].iloc[self.maskCc],
+                ls="",
+                marker="x",
+                color=colors[1],
+                label=f"Data for linear fit\n(R$^2={self.r2Cc:.3f}$)",
+            )
         # Recompression index
-        x4Cr = np.linspace(self.raw['stress'].iloc[self.maskCr].min(),
-                           self.raw['stress'].iloc[self.maskCr].max())
+        x4Cr = np.linspace(
+            self.raw["stress"].iloc[self.maskCr].min(),
+            self.raw["stress"].iloc[self.maskCr].max(),
+        )
         y4Cr = -self.idxCr * np.log10(x4Cr) + self.idxCrInt
-        ax.plot(x4Cr, y4Cr, ls='-', lw=1.125, color=colors[2],
-                label=str().join([r'$C_\mathrm{r}=$', f'{self.idxCr:.3f}']))
-        ax.plot(self.raw['stress'].iloc[self.maskCr],
-                self.raw['e'].iloc[self.maskCr], ls='', marker='+',
-                color=colors[2],
-                label=f'Data for linear fit\n(R$^2={self.r2Cr:.3f}$)')
+        ax.plot(
+            x4Cr,
+            y4Cr,
+            ls="-",
+            lw=1.125,
+            color=colors[2],
+            label=str().join(["$C_\mathrm{r}=$", f"{self.idxCr:.3f}"]),
+        )
+        ax.plot(
+            self.raw["stress"].iloc[self.maskCr],
+            self.raw["e"].iloc[self.maskCr],
+            ls="",
+            marker="+",
+            color=colors[2],
+            label=f"Data for linear fit\n(R$^2={self.r2Cr:.3f}$)",
+        )
         # other details
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.set(xscale='log', ylabel='Void ratio, $e$',
-               xlabel=str().join(['Effective vertical stress, ',
-                                  r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.set(
+            xscale="log",
+            ylabel="Void ratio, $e$",
+            xlabel=str().join(
+                [
+                    "Effective vertical stress, ",
+                    "$\sigma^\prime_\mathrm{v}$ [kPa]",
+                ]
+            ),
+        )
         ax.xaxis.set_major_formatter(mtick.ScalarFormatter())
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.grid(False)
-        ax.legend(bbox_to_anchor=(1.125, 0.5), loc=6,
-                  title=r"\textbf{Compressibility curve}")
+        ax.legend(
+            bbox_to_anchor=(1.125, 0.5),
+            loc=6,
+            title="$\\bf{Compressibility\ curve}$",
+        )
         return fig
 
 

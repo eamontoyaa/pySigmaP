@@ -48,6 +48,7 @@ To cite **pySigmaP** in publications, use:
 A BibTeX entry for LaTeX users is:
 
 .. code:: bibtex
+
     @article{MontoyaAraque_etal_2022_art,author = {Montoya-Araque, Exneyder A. and Aparicio-Ortube, A.J. and Zapata-Medina, David G. and Arboleda-Monsalve, Luis G.},
     doi = {10.1016/j.softx.2022.100990},
     issn = {23527110},
