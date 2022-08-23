@@ -17,6 +17,7 @@ import matplotlib.ticker as mtick
 from pysigmap import figsize, colors
 
 
+plt.style.use("default")
 plt.rcParams['font.family'] = 'Serif'
 plt.rcParams['font.size'] = 12
 plt.rcParams['text.usetex'] = True
