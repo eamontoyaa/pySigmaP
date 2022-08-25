@@ -5,13 +5,52 @@ Structure
 
 Each module is documented and basic examples are illustrated.
 
-.. toctree::
-   :maxdepth: 10
 
-   data
-   casagrande
-   energy
-   bilog
-   pachecosilva
-   boone
+``data``
+--------
+
+.. automodule:: data
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+``casagrande``
+--------------
+
+.. automodule:: casagrande
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+``energy``
+----------
+
+.. automodule:: energy
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+``bilog``
+---------
+
+.. automodule:: bilog
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+``pachecosilva``
+----------------
+
+.. automodule:: pachecosilva
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+``boone``
+---------
+
+.. automodule:: boone
+    :members:
+    :undoc-members:
+    :show-inheritance:
 

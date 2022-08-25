@@ -57,6 +57,11 @@ class Data:
     secondUnloading : bool, optional
         Boolean to specify if the test included two reloading stages. The
         default is True.
+    use_this_UR_stage : int, optional
+        Index to specify which unloading-reloading stage will be used to
+        compute the recompression index when the test data includes more than
+        one stage.  Index notation as Python's standard (first stage → 0). The
+        default is 0.
 
     Examples
     --------

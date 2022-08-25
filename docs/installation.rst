@@ -34,11 +34,11 @@ You can either clone the public repository:
 
     $ git clone git://github.com/eamontoyaa/pysigmap
 
-Once you have a copy of the source, you can install it with:
+Once you have a copy of the source code, you can install it with:
 
 .. code-block:: console
 
-    $ python setup.py install
+    $ pip install -e .
 
 
 .. _Github repo: https://github.com/eamontoyaa/pysigmap
@@ -49,12 +49,10 @@ Requirements
 ------------
 
 The code was written in Python 3. The packages `numpy <http://www.numpy.org/>`_,
-`scipy <https://www.scipy.org/>`_, `matplotlib <https://matplotlib.org/>`_, 
-`pandas <https://pandas.pydata.org/>`_
-and `mstools <https://mstools.readthedocs.io/>`_ are
-required for using **pySigmaP**. All of them are
-downloadable from the PyPI repository by opening a terminal and typing the
-following code lines:
+`scipy <https://www.scipy.org/>`_, `matplotlib <https://matplotlib.org/>`_,
+`pandas <https://pandas.pydata.org/>`_ and `mstools <https://mstools.readthedocs.io/>`_ are
+required for using **pySigmaP**. They must be installed along with pySigmaP, however, all of them can manually be
+installed from the PyPI repository by opening a terminal and typing the following code lines:
 
 
 ::
@@ -65,7 +63,7 @@ following code lines:
     pip install pandas
     pip install mstools
 
-`LaTeX <https://www.latex-project.org/>`_ is also required to render fonts. Linux distributions
-usually have pre-installed LaTeX; however, for Microsoft Windows operative systems, it is suggested
+`LaTeX <https://www.latex-project.org/>`_ is also required to render fonts for up to the release v0.1.8.
+Linux distributions usually have pre-installed LaTeX; however, for Microsoft Windows operative systems, it is suggested
 to install `MiKTeX <https://miktex.org/download/>`_,  an up-to-date implementation of TeX/LaTeX.
 

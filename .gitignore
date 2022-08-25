@@ -123,11 +123,6 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
-illustrative_examples/additional_data
-illustrative_examples/data4testing
-illustrative_examples/ingenium.py
-illustrative_examples/ingeniumResults.pdf
-illustrative_examples/ingeniumResults.xlsx
-illustrative_examples/tests.py
-illustrative_examples/testZapataData.py
-illustrative_examples/safet_mutapcija
+
+illustrative_examples/*
+!illustrative_examples/illustrative_examples.py

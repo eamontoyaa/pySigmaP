@@ -46,3 +46,10 @@ History
 ------------------
 
 * Minor improvements to figures.
+
+0.1.9 (2022-08-24)
+------------------
+
+* Update documentation.
+* Include feature to the `Data` class to read data with multiple unloading-reloading stages.
+* Remove dependency of external LaTeX installation.

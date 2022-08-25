@@ -3,7 +3,6 @@
 """Application software for calculating the preconsolidation pressure from the incremental loading oedometer testing"""
 
 __all__ = ["data", "casagrande", "energy", "bilog", "pachecosilva", "boone"]
-__email__ = "eamontoyaa@gmail.com"
 __version__ = "0.1.9"
 
 # Global variables
