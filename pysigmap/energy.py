@@ -25,20 +25,28 @@ determining preconsolidation pressure. Canadian Geotechnical Journal, 41, 4,
 import numpy as np
 from numpy.polynomial.polynomial import polyfit, polyval
 from scipy.interpolate import CubicSpline
+import matplotlib as mpl
 import matplotlib.pyplot as plt
+from mstools.mstools import r2_score
 from mpl_toolkits.axes_grid1.inset_locator import zoomed_inset_axes
 from mpl_toolkits.axes_grid1.inset_locator import mark_inset
-from mstools.mstools import r2_score
 import matplotlib.ticker as mtick
 
 from pysigmap import figsize, colors
 
-plt.rcParams['font.family'] = 'Serif'
-plt.rcParams['font.size'] = 12
-plt.rcParams['text.usetex'] = True
+mpl.rcParams.update(
+    {
+        "text.usetex": False,  # Use mathtext, not LaTeX
+        "font.family": "serif",  # Use the Computer modern font
+        "font.serif": "cmr10",
+        "mathtext.fontset": "cm",
+        "axes.formatter.use_mathtext": True,
+        "axes.unicode_minus": False,
+    }
+)
 
 
-class BeckerEtAl():
+class BeckerEtAl:
     """
     ``BeckerEtAl`` class.
 
@@ -83,19 +91,26 @@ class BeckerEtAl():
         None.
 
         """
-        sigma = self.data.raw['stress'].array
-        epsilon = self.data.raw['strain'].array
-        deltaWork = 0.5*(epsilon[1:] - epsilon[:-1])*(sigma[1:] + sigma[:-1])
+        sigma = self.data.raw["stress"].array
+        epsilon = self.data.raw["strain"].array
+        deltaWork = (
+            0.5 * (epsilon[1:] - epsilon[:-1]) * (sigma[1:] + sigma[:-1])
+        )
         deltaWork = np.hstack((0, deltaWork))
         if self.morinFormulation:  # Work per unit volume of solids
-            deltaWork /= (1 + self.data.e_0)
-        self.data.raw['deltaWork'] = deltaWork
-        self.data.raw['work'] = np.cumsum(deltaWork)
+            deltaWork /= 1 + self.data.e_0
+        self.data.raw["deltaWork"] = deltaWork
+        self.data.raw["work"] = np.cumsum(deltaWork)
         self.data.clean()  # Data without unloads
         return
 
-    def getSigmaP(self, range2fitRR=None, range2fitCR=None, zoom=3,
-                  morinFormulation=False):
+    def getSigmaP(
+        self,
+        range2fitRR=None,
+        range2fitCR=None,
+        zoom=3,
+        morinFormulation=False,
+    ):
         """
         Return the value of the preconsolidation pressure.
 
@@ -141,20 +156,22 @@ class BeckerEtAl():
         if range2fitRR is None:  # Indices for fitting the RR line
             idxInitRR = 0
             idxEndRR = self.data.findStressIdx(
-                stress2find=self.data.sigmaV, cleanedData=True)
+                stress2find=self.data.sigmaV, cleanedData=True
+            )
         else:
             idxInitRR = self.data.findStressIdx(
-                stress2find=range2fitRR[0], cleanedData=True)
+                stress2find=range2fitRR[0], cleanedData=True
+            )
             idxEndRR = self.data.findStressIdx(
-                stress2find=range2fitRR[1], cleanedData=True)
-        maskRR[idxInitRR: idxEndRR] = True
+                stress2find=range2fitRR[1], cleanedData=True
+            )
+        maskRR[idxInitRR:idxEndRR] = True
         # Linear regresion
-        sigmaRR = self.data.cleaned['stress'][maskRR]
-        workRR = self.data.cleaned['work'][maskRR]
+        sigmaRR = self.data.cleaned["stress"][maskRR]
+        workRR = self.data.cleaned["work"][maskRR]
         p1_0, p1_1 = polyfit(sigmaRR, workRR, deg=1)
-        r2RR = r2_score(
-            y_true=workRR, y_pred=polyval(sigmaRR, [p1_0, p1_1]))
-        xRR = np.linspace(0, self.data.cleaned['stress'].iloc[-3])
+        r2RR = r2_score(y_true=workRR, y_pred=polyval(sigmaRR, [p1_0, p1_1]))
+        xRR = np.linspace(0, self.data.cleaned["stress"].iloc[-3])
         yRR = polyval(xRR, [p1_0, p1_1])
 
         # -- Post yield range or compression range (CR)
@@ -162,28 +179,34 @@ class BeckerEtAl():
         if range2fitCR is not None or self.data.fitCc:  # Using a linear fit
             if range2fitCR is not None:
                 idxInitCR = self.data.findStressIdx(
-                    stress2find=range2fitCR[0], cleanedData=True)
+                    stress2find=range2fitCR[0], cleanedData=True
+                )
                 idxEndCR = self.data.findStressIdx(
-                    stress2find=range2fitCR[1], cleanedData=True)
-                maskCR[idxInitCR: idxEndCR] = True
+                    stress2find=range2fitCR[1], cleanedData=True
+                )
+                maskCR[idxInitCR:idxEndCR] = True
             elif self.data.fitCc:
                 maskCR = self.data.maskCc
             # Linear regresion
-            sigmaCR = self.data.cleaned['stress'][maskCR]
-            workCR = self.data.cleaned['work'][maskCR]
+            sigmaCR = self.data.cleaned["stress"][maskCR]
+            workCR = self.data.cleaned["work"][maskCR]
             lcrInt, lcrSlope = polyfit(sigmaCR, workCR, deg=1)
             r2CR = r2_score(
-                y_true=workCR, y_pred=polyval(sigmaCR, [lcrInt, lcrSlope]))
+                y_true=workCR, y_pred=polyval(sigmaCR, [lcrInt, lcrSlope])
+            )
         else:  # Using the steepest point of a cubic spline
-            sigma = self.data.cleaned['stress']
-            cs = CubicSpline(x=sigma, y=self.data.cleaned['work'])
+            sigma = self.data.cleaned["stress"]
+            cs = CubicSpline(x=sigma, y=self.data.cleaned["work"])
             sigmaCS = np.linspace(sigma.iloc[0], sigma.iloc[-1], 500)
             steepestSlopeIdx = np.argmax(cs(sigmaCS, 1))
             lcrSlope = cs(sigmaCS, 1)[steepestSlopeIdx]
-            lcrInt = cs(sigmaCS[steepestSlopeIdx]) - \
-                lcrSlope*sigmaCS[steepestSlopeIdx]
+            lcrInt = (
+                cs(sigmaCS[steepestSlopeIdx])
+                - lcrSlope * sigmaCS[steepestSlopeIdx]
+            )
         xCR = np.linspace(
-            -lcrInt/lcrSlope, self.data.cleaned['stress'].iloc[-1])
+            -lcrInt / lcrSlope, self.data.cleaned["stress"].iloc[-1]
+        )
         yCR = polyval(xCR, [lcrInt, lcrSlope])
 
         # -- Preconsolitadion pressure
@@ -195,39 +218,96 @@ class BeckerEtAl():
         # -- Plot compresibility curve
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
-        ax.plot(self.data.raw['stress'], self.data.raw['work'], ls=(0, (1, 1)),
-                marker='o', lw=1.5, c='k', mfc='w', label='Data')  # all data
+        ax.plot(
+            self.data.raw["stress"],
+            self.data.raw["work"],
+            ls=(0, (1, 1)),
+            marker="o",
+            lw=1.5,
+            c="k",
+            mfc="w",
+            label="Data",
+        )  # all data
         # Recompression range
-        ax.plot(xRR, yRR, ls='-', c=colors[2], lw=1.125,
-                label='Recompression range')
-        ax.plot(sigmaRR, workRR, ls='', marker='+', c=colors[2],
-                label=f'Data for linear fit\n(R$^2={r2RR:.3f}$)')
+        ax.plot(
+            xRR,
+            yRR,
+            ls="-",
+            c=colors[2],
+            lw=1.125,
+            label="Recompression range",
+        )
+        ax.plot(
+            sigmaRR,
+            workRR,
+            ls="",
+            marker="+",
+            c=colors[2],
+            label=f"Data for linear fit\n(R$^2={r2RR:.3f}$)",
+        )
         # Compression range
-        ax.plot(xCR, yCR, ls='-', c=colors[1], lw=1.125,
-                label='Compression range')
+        ax.plot(
+            xCR, yCR, ls="-", c=colors[1], lw=1.125, label="Compression range"
+        )
         if range2fitCR is not None or self.data.fitCc:
-            ax.plot(sigmaCR, workCR, ls='', marker='x', c=colors[1],
-                    label=f'Data for linear fit\n(R$^2={r2CR:.3f}$)')
+            ax.plot(
+                sigmaCR,
+                workCR,
+                ls="",
+                marker="x",
+                c=colors[1],
+                label=f"Data for linear fit\n(R$^2={r2CR:.3f}$)",
+            )
         # Other plots
-        ax.plot(self.data.sigmaV, workSigmaV, ls='', marker='|', c='r', ms=15,
-                mfc='w', mew=1.5,
-                label=str().join([r'$\sigma^\prime_\mathrm{v0}=$ ',
-                                  f'{self.data.sigmaV:.0f} kPa']))
-        ax.plot(self.sigmaP, self.wSigmaP, ls='', c=colors[0], ms=7, mfc='w',
-                marker='o', mew=1.5,
-                label=str().join([r'$\sigma^\prime_\mathrm{p}=$ ',
-                                  f'{self.sigmaP:.0f} kPa\n',
-                                  f'OCR= {self.ocr:.1f}']))
+        ax.plot(
+            self.data.sigmaV,
+            workSigmaV,
+            ls="",
+            marker="|",
+            c="r",
+            ms=15,
+            mfc="w",
+            mew=1.5,
+            label=str().join(
+                [
+                    "$\sigma^\prime_\mathrm{v0}=$ ",
+                    f"{self.data.sigmaV:.0f} kPa",
+                ]
+            ),
+        )
+        ax.plot(
+            self.sigmaP,
+            self.wSigmaP,
+            ls="",
+            c=colors[0],
+            ms=7,
+            mfc="w",
+            marker="o",
+            mew=1.5,
+            label=str().join(
+                [
+                    "$\sigma^\prime_\mathrm{p}=$ ",
+                    f"{self.sigmaP:.0f} kPa\n",
+                    f"OCR= {self.ocr:.1f}",
+                ]
+            ),
+        )
         # Other details
         if morinFormulation:
-            methodTitle = r"\textbf{Morin method}"
+            methodTitle = "$\\bf{Morin\ method}$"
         else:
-            methodTitle = r"\textbf{Becker \textit{et al.} method}"
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.set(ylabel='Total work per unit volume, $W$ [kJ m$^{-3}$]',
-               xlabel=str().join(['Effective vertical stress, ',
-                                  r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
+            methodTitle = "$\\bf{Becker\ et\ al.\ method}$"
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.set(
+            ylabel="Total work per unit volume, $W$ [kJ m$^{-3}$]",
+            xlabel=str().join(
+                [
+                    "Effective vertical stress, ",
+                    "$\sigma^\prime_\mathrm{v}$ [kPa]",
+                ]
+            ),
+        )
         ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.grid(False)
@@ -235,34 +315,58 @@ class BeckerEtAl():
 
         # -- inset axes to zoom
         axins = zoomed_inset_axes(ax, zoom=zoom, loc=4)
-        axins.plot(self.data.raw['stress'], self.data.raw['work'], ls=':',
-                   marker='o', lw=1.5, c='k', mfc='w')  # all data
-        axins.plot(xRR, yRR, ls='-', c=colors[2], lw=1.125)
-        axins.plot(sigmaRR, workRR, ls='', marker='+', c=colors[2])
-        axins.plot(xCR, yCR, ls='-', c=colors[1], lw=1.125)
+        axins.plot(
+            self.data.raw["stress"],
+            self.data.raw["work"],
+            ls=":",
+            marker="o",
+            lw=1.5,
+            c="k",
+            mfc="w",
+        )  # all data
+        axins.plot(xRR, yRR, ls="-", c=colors[2], lw=1.125)
+        axins.plot(sigmaRR, workRR, ls="", marker="+", c=colors[2])
+        axins.plot(xCR, yCR, ls="-", c=colors[1], lw=1.125)
         if range2fitCR is not None or self.data.fitCc:
-            axins.plot(sigmaCR, workCR, ls='', marker='x', c=colors[1])
-        axins.plot(self.data.sigmaV, workSigmaV, ls='', marker='|', c='r',
-                   ms=15, mfc='w', mew=1.5)
-        axins.plot(self.sigmaP, self.wSigmaP, marker='o', c=colors[0], ms=7,
-                   mfc='w', mew=1.5)
+            axins.plot(sigmaCR, workCR, ls="", marker="x", c=colors[1])
+        axins.plot(
+            self.data.sigmaV,
+            workSigmaV,
+            ls="",
+            marker="|",
+            c="r",
+            ms=15,
+            mfc="w",
+            mew=1.5,
+        )
+        axins.plot(
+            self.sigmaP,
+            self.wSigmaP,
+            marker="o",
+            c=colors[0],
+            ms=7,
+            mfc="w",
+            mew=1.5,
+        )
         # axins.spines['bottom'].set_visible(False)
         # axins.spines['right'].set_visible(False)
         axins.grid(False)
-        axins.set(xlim=(-0.05*self.sigmaP, 1.25 * self.sigmaP),
-                  ylim=(-0.05 * self.wSigmaP, 2.05 * self.wSigmaP),
-                  xlabel=r'$\sigma^\prime_\mathrm{v}$ [kPa]',
-                  ylabel=r'W [kJ m$^{-3}$]')
+        axins.set(
+            xlim=(-0.05 * self.sigmaP, 1.25 * self.sigmaP),
+            ylim=(-0.05 * self.wSigmaP, 2.05 * self.wSigmaP),
+            xlabel="$\sigma^\prime_\mathrm{v}$ [kPa]",
+            ylabel="W [kJ m$^{-3}$]",
+        )
         axins.xaxis.tick_top()
-        axins.xaxis.set_label_position('top')
+        axins.xaxis.set_label_position("top")
         axins.yaxis.tick_right()
-        axins.yaxis.set_label_position('right')
-        axins.xaxis.set_tick_params(labelsize='small')
-        axins.yaxis.set_tick_params(labelsize='small')
+        axins.yaxis.set_label_position("right")
+        axins.xaxis.set_tick_params(labelsize="small")
+        axins.yaxis.set_tick_params(labelsize="small")
         axins.xaxis.set_minor_locator(mtick.AutoMinorLocator())
         axins.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         # axins.set_yticks([])
-        mark_inset(ax, axins, loc1=2, loc2=3, fc='none', ec="0.5")  # bbox
+        mark_inset(ax, axins, loc1=2, loc2=3, fc="none", ec="0.5")  # bbox
         return fig
 
 
@@ -327,32 +431,36 @@ class WangAndFrost(BeckerEtAl):
 
         """
         # -- Incremental total strain energy (ITSE = deltaWork)
-        self.data.raw['ITSE'] = self.data.raw['deltaWork']
+        self.data.raw["ITSE"] = self.data.raw["deltaWork"]
         # -- Accumulative total strain energy (ATSE = work)
-        self.data.raw['ATSE'] = self.data.raw['work']
+        self.data.raw["ATSE"] = self.data.raw["work"]
         # -- Calculating the accumulative elastic strain energy (AESE)
-        self.data.raw['AESE'] = (
-            self.data.raw['stress'] * self.data.idxCr / (1 + self.data.e_0))
+        self.data.raw["AESE"] = (
+            self.data.raw["stress"] * self.data.idxCr / (1 + self.data.e_0)
+        )
         # -- Calculating the accumulative dissipated strain energy (ADSE)
-        self.data.raw['ADSE'] = self.data.raw['ATSE'] - self.data.raw['AESE']
+        self.data.raw["ADSE"] = self.data.raw["ATSE"] - self.data.raw["AESE"]
         # -- Calculating value for correcting ADSE (OR: corrVal)
         self.data.clean()  # Updating data without unloads
         if range2fitCR is not None or self.data.fitCc:
-            s2fitTE = self.data.cleaned['stress'][self.maskCR]
-            w2fitTE = self.data.cleaned['ATSE'][self.maskCR]
+            s2fitTE = self.data.cleaned["stress"][self.maskCR]
+            w2fitTE = self.data.cleaned["ATSE"][self.maskCR]
             self.corrVal, _ = polyfit(s2fitTE, w2fitTE, deg=1)
         else:
-            cs = CubicSpline(x=self.data.cleaned['stress'],
-                             y=self.data.cleaned['ATSE'])
-            sigmaCS = np.linspace(0, self.data.cleaned['stress'].iloc[-1], 500)
+            cs = CubicSpline(
+                x=self.data.cleaned["stress"], y=self.data.cleaned["ATSE"]
+            )
+            sigmaCS = np.linspace(0, self.data.cleaned["stress"].iloc[-1], 500)
             steepestSlopeIdx = np.argmax(cs(sigmaCS, 1))
             lcrSlope = cs(sigmaCS, 1)[steepestSlopeIdx]
-            self.corrVal = cs(sigmaCS[steepestSlopeIdx]) - \
-                lcrSlope*sigmaCS[steepestSlopeIdx]
+            self.corrVal = (
+                cs(sigmaCS[steepestSlopeIdx])
+                - lcrSlope * sigmaCS[steepestSlopeIdx]
+            )
         # -- Calculating the accumulative total strain energy corrected (ATSEC)
-        self.data.raw['ATSEC'] = self.data.raw['ATSE'] + abs(self.corrVal)
+        self.data.raw["ATSEC"] = self.data.raw["ATSE"] + abs(self.corrVal)
         # -- Accumulative dissipated strain energy corrected (ADSEC)
-        self.data.raw['ADSEC'] = self.data.raw['ADSE'] + abs(self.corrVal)
+        self.data.raw["ADSEC"] = self.data.raw["ADSE"] + abs(self.corrVal)
         # -- Updating data without unloads
         self.data.clean()
         return
@@ -384,78 +492,152 @@ class WangAndFrost(BeckerEtAl):
         if range2fitCR is not None or self.data.fitCc:  # Using a linear fit
             if range2fitCR is not None:
                 idxInitCR = self.data.findStressIdx(
-                    stress2find=range2fitCR[0], cleanedData=True)
+                    stress2find=range2fitCR[0], cleanedData=True
+                )
                 idxEndCR = self.data.findStressIdx(
-                    stress2find=range2fitCR[1], cleanedData=True)
-                self.maskCR[idxInitCR: idxEndCR] = True
+                    stress2find=range2fitCR[1], cleanedData=True
+                )
+                self.maskCR[idxInitCR:idxEndCR] = True
             elif self.data.fitCc:
                 self.maskCR = self.data.maskCc
             # -- Calculatting the dissipated strain energy corrected (ADSEC)
             self.calculateDissipatedE(range2fitCR)
             # -- Linear regresion of points on post yield line
-            sigmaCR = self.data.cleaned['stress'][self.maskCR]
-            disspE = self.data.cleaned['ADSEC'][self.maskCR]
+            sigmaCR = self.data.cleaned["stress"][self.maskCR]
+            disspE = self.data.cleaned["ADSEC"][self.maskCR]
             lcrInt, lcrSlope = polyfit(sigmaCR, disspE, deg=1)
             r2CR = r2_score(
-                y_true=disspE, y_pred=polyval(sigmaCR, [lcrInt, lcrSlope]))
+                y_true=disspE, y_pred=polyval(sigmaCR, [lcrInt, lcrSlope])
+            )
 
         else:  # Using the steepest point of a cubic spline
             # -- Calculatting the dissipated strain energy corrected (ADSEC)
             self.calculateDissipatedE(range2fitCR)
-            sigma = self.data.cleaned['stress']
-            cs = CubicSpline(x=sigma, y=self.data.cleaned['ADSEC'])
+            sigma = self.data.cleaned["stress"]
+            cs = CubicSpline(x=sigma, y=self.data.cleaned["ADSEC"])
             sigmaCS = np.linspace(sigma.iloc[0], sigma.iloc[-1], 500)
             steepestSlopeIdx = np.argmax(cs(sigmaCS, 1))
             lcrSlope = cs(sigmaCS, 1)[steepestSlopeIdx]
-            lcrInt = cs(sigmaCS[steepestSlopeIdx]) - \
-                lcrSlope*sigmaCS[steepestSlopeIdx]
+            lcrInt = (
+                cs(sigmaCS[steepestSlopeIdx])
+                - lcrSlope * sigmaCS[steepestSlopeIdx]
+            )
 
         # -- Preconsolitadion pressure
         self.sigmaP = (abs(self.corrVal) - lcrInt) / lcrSlope
         self.sseSigmaP = polyval(self.sigmaP, [lcrInt, lcrSlope])
         self.ocr = self.sigmaP / self.data.sigmaV
 
-        xCR = np.linspace(self.sigmaP, self.data.cleaned['stress'].iloc[-1])
+        xCR = np.linspace(self.sigmaP, self.data.cleaned["stress"].iloc[-1])
         yCR = polyval(xCR, [lcrInt, lcrSlope])
 
         # -- Plot compresibility curve
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
-        ax.plot(self.data.raw['stress'], self.data.raw['ATSEC'], ls=':',
-                marker='v', lw=0.5, c='gray', mfc='w', label='Total energy')
-        ax.plot(self.data.raw['stress'], self.data.raw['AESE'], ls=':',
-                marker='s', lw=0.5, c='gray', mfc='w', label='Elastic energy')
-        ax.plot(self.data.raw['stress'], self.data.raw['ADSEC'], ls=':',
-                marker='o', lw=1.5, c='k', mfc='w', label='Dissipated energy')
-        ax.hlines(y=abs(self.corrVal), xmin=0, xmax=self.sigmaP, lw=1.125,
-                  color=colors[2])
+        ax.plot(
+            self.data.raw["stress"],
+            self.data.raw["ATSEC"],
+            ls=":",
+            marker="v",
+            lw=0.5,
+            c="gray",
+            mfc="w",
+            label="Total energy",
+        )
+        ax.plot(
+            self.data.raw["stress"],
+            self.data.raw["AESE"],
+            ls=":",
+            marker="s",
+            lw=0.5,
+            c="gray",
+            mfc="w",
+            label="Elastic energy",
+        )
+        ax.plot(
+            self.data.raw["stress"],
+            self.data.raw["ADSEC"],
+            ls=":",
+            marker="o",
+            lw=1.5,
+            c="k",
+            mfc="w",
+            label="Dissipated energy",
+        )
+        ax.hlines(
+            y=abs(self.corrVal),
+            xmin=0,
+            xmax=self.sigmaP,
+            lw=1.125,
+            color=colors[2],
+        )
         # Compression range
-        ax.plot(xCR, yCR, ls='-', c=colors[1], lw=1.125,
-                label='Compression range')
+        ax.plot(
+            xCR, yCR, ls="-", c=colors[1], lw=1.125, label="Compression range"
+        )
         if range2fitCR is not None or self.data.fitCc:
-            ax.plot(sigmaCR, disspE, ls='', marker='x', c=colors[1],
-                    label=f'Data for linear fit\n(R$^2={r2CR:.3f}$)')
+            ax.plot(
+                sigmaCR,
+                disspE,
+                ls="",
+                marker="x",
+                c=colors[1],
+                label=f"Data for linear fit\n(R$^2={r2CR:.3f}$)",
+            )
         # Other plots
-        ax.plot(self.data.sigmaV, -self.corrVal, ls='', marker='|', c='r',
-                ms=15, mfc='w', mew=1.5, label=str().join([
-                    r'$\sigma^\prime_\mathrm{v0}=$ ',
-                    f'{self.data.sigmaV:.0f} kPa']))
-        ax.plot(self.sigmaP, self.sseSigmaP, ls='', marker='o', c=colors[0],
-                ms=7, mfc='w', mew=1.5,
-                label=str().join([r'$\sigma^\prime_\mathrm{p}=$ ',
-                                  f'{self.sigmaP:.0f} kPa\n',
-                                  f'OCR= {self.ocr:.1f}']))
+        ax.plot(
+            self.data.sigmaV,
+            -self.corrVal,
+            ls="",
+            marker="|",
+            c="r",
+            ms=15,
+            mfc="w",
+            mew=1.5,
+            label=str().join(
+                [
+                    "$\sigma^\prime_\mathrm{v0}=$ ",
+                    f"{self.data.sigmaV:.0f} kPa",
+                ]
+            ),
+        )
+        ax.plot(
+            self.sigmaP,
+            self.sseSigmaP,
+            ls="",
+            marker="o",
+            c=colors[0],
+            ms=7,
+            mfc="w",
+            mew=1.5,
+            label=str().join(
+                [
+                    "$\sigma^\prime_\mathrm{p}=$ ",
+                    f"{self.sigmaP:.0f} kPa\n",
+                    f"OCR= {self.ocr:.1f}",
+                ]
+            ),
+        )
         # Other details
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.set(ylabel='Specific strain energy [kPa]',
-               xlabel=str().join(['Effective vertical stress, ',
-                                  r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.set(
+            ylabel="Specific strain energy [kPa]",
+            xlabel=str().join(
+                [
+                    "Effective vertical stress, ",
+                    "$\sigma^\prime_\mathrm{v}$ [kPa]",
+                ]
+            ),
+        )
         ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.grid(False)
-        ax.legend(bbox_to_anchor=(1.125, 0.5), loc=6,
-                  title=r"\textbf{Wang \& Frost method}")
+        ax.legend(
+            bbox_to_anchor=(1.125, 0.5),
+            loc=6,
+            title="$\\bf{Wang\ and\ Frost\ method}$",
+        )
         return fig
 
 

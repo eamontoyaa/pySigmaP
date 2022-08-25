@@ -23,18 +23,26 @@ https://doi.org/10.3208/sandf.35.61
 import numpy as np
 from numpy.polynomial.polynomial import polyfit, polyval
 from scipy.interpolate import CubicSpline
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-from mstools.mstools import r2_score
 import matplotlib.ticker as mtick
+from mstools.mstools import r2_score
 
 from pysigmap import figsize, colors
 
-plt.rcParams['font.family'] = 'Serif'
-plt.rcParams['font.size'] = 12
-plt.rcParams['text.usetex'] = True
+mpl.rcParams.update(
+    {
+        "text.usetex": False,  # Use mathtext, not LaTeX
+        "font.family": "serif",  # Use the Computer modern font
+        "font.serif": "cmr10",
+        "mathtext.fontset": "cm",
+        "axes.formatter.use_mathtext": True,
+        "axes.unicode_minus": False,
+    }
+)
 
 
-class Bilog():
+class Bilog:
     """
     ``Bilog`` class.
 
@@ -113,39 +121,50 @@ class Bilog():
             Figure with the development of the method and the results.
 
         """
+
         def transformX(x, opt=1):
             return np.log(x) if opt == 1 else np.log10(x)
 
         def transformY(y, opt=1):
             return np.log10(y) if opt == 2 else np.log(y)
 
-        self.data.raw['vol'] = self.data.raw['e'] + 1
+        self.data.raw["vol"] = self.data.raw["e"] + 1
         self.data.clean()  # -- Updating data without unloads
 
         # def ticks(x, pos): return f'$e^{np.log(x):.0f}$'
 
         if range2fitRR is None:  # Indices for fitting the RR line
             idxInitRR = 1
-            idxEndRR = self.data.findStressIdx(
-                stress2find=self.data.sigmaV, cleanedData=True) - 1
+            idxEndRR = (
+                self.data.findStressIdx(
+                    stress2find=self.data.sigmaV, cleanedData=True
+                )
+                - 1
+            )
         else:
             idxInitRR = self.data.findStressIdx(
-                stress2find=range2fitRR[0], cleanedData=True)
-            idxEndRR = self.data.findStressIdx(
-                stress2find=range2fitRR[1], cleanedData=True) - 1
+                stress2find=range2fitRR[0], cleanedData=True
+            )
+            idxEndRR = (
+                self.data.findStressIdx(
+                    stress2find=range2fitRR[1], cleanedData=True
+                )
+                - 1
+            )
 
         # -- Linear regresion of points on the recompression range(RR)
-        sigmaRR = self.data.cleaned['stress'][idxInitRR: idxEndRR+1]
-        volRR = self.data.cleaned['vol'][idxInitRR: idxEndRR+1]
+        sigmaRR = self.data.cleaned["stress"][idxInitRR : idxEndRR + 1]
+        volRR = self.data.cleaned["vol"][idxInitRR : idxEndRR + 1]
         sigmaRRlog = transformX(sigmaRR, opt)
         volRRlog = transformY(volRR, opt)
         p1_0, p1_1 = polyfit(sigmaRRlog, volRRlog, deg=1)
         r2RR = r2_score(
-            y_true=volRRlog, y_pred=polyval(sigmaRRlog, [p1_0, p1_1]))
+            y_true=volRRlog, y_pred=polyval(sigmaRRlog, [p1_0, p1_1])
+        )
 
         # -- Cubic spline that passes through the data
-        sigmaLog = transformX(self.data.cleaned['stress'][1:], opt)
-        volLog = transformY(self.data.cleaned['vol'][1:], opt)
+        sigmaLog = transformX(self.data.cleaned["stress"][1:], opt)
+        volLog = transformY(self.data.cleaned["vol"][1:], opt)
         cs = CubicSpline(x=sigmaLog, y=volLog)
         # Specific volume at sigma V
         volSigmaV = cs(transformX(self.data.sigmaV, opt))
@@ -155,30 +174,35 @@ class Bilog():
         if range2fitCR is not None or self.data.fitCc:  # Using a linear fit
             if range2fitCR is not None:
                 idxInitCR = self.data.findStressIdx(
-                    stress2find=range2fitCR[0], cleanedData=True)
+                    stress2find=range2fitCR[0], cleanedData=True
+                )
                 idxEndCR = self.data.findStressIdx(
-                    stress2find=range2fitCR[1], cleanedData=True)
-                self.maskCR[idxInitCR: idxEndCR] = True
+                    stress2find=range2fitCR[1], cleanedData=True
+                )
+                self.maskCR[idxInitCR:idxEndCR] = True
             elif self.data.fitCc:
                 self.maskCR = self.data.maskCc
             # -- Linear regresion of points on post yield line
-            sigmaCR = self.data.cleaned['stress'][self.maskCR]
+            sigmaCR = self.data.cleaned["stress"][self.maskCR]
             sigmaCRlog = transformX(sigmaCR, opt)
-            volCR = self.data.cleaned['vol'][self.maskCR]
+            volCR = self.data.cleaned["vol"][self.maskCR]
             volCRlog = transformY(volCR, opt)
             lcrInt, lcrSlope = polyfit(sigmaCRlog, volCRlog, deg=1)
-            r2CR = r2_score(y_true=volCRlog,
-                            y_pred=polyval(sigmaCRlog, [lcrInt, lcrSlope]))
+            r2CR = r2_score(
+                y_true=volCRlog, y_pred=polyval(sigmaCRlog, [lcrInt, lcrSlope])
+            )
 
         else:  # Using the steepest point of a cubic spline
             sigmaCS = np.linspace(sigmaLog.iloc[0], sigmaLog.iloc[-1], 500)
             steepestSlopeIdx = np.argmin(cs(sigmaCS, 1))
             lcrSlope = cs(sigmaCS, 1)[steepestSlopeIdx]
-            lcrInt = cs(sigmaCS[steepestSlopeIdx]) - \
-                lcrSlope*sigmaCS[steepestSlopeIdx]
+            lcrInt = (
+                cs(sigmaCS[steepestSlopeIdx])
+                - lcrSlope * sigmaCS[steepestSlopeIdx]
+            )
 
         xScl = np.e if opt == 1 else 10  # log scale for plotting
-        yLabel = r'$\log_{10} (1+e)$' if opt == 2 else r'$\ln (1+e)$'
+        yLabel = "$\log_{10} (1+e)$" if opt == 2 else "$\ln (1+e)$"
 
         # -- Preconsolitadion pressure
         self.sigmaP = xScl ** ((lcrInt - p1_0) / (p1_1 - lcrSlope))
@@ -186,7 +210,7 @@ class Bilog():
         self.ocr = self.sigmaP / self.data.sigmaV
 
         # -- Lines of the bilogarithmic methods
-        xCR = np.linspace(self.sigmaP, self.data.cleaned['stress'].iloc[-1])
+        xCR = np.linspace(self.sigmaP, self.data.cleaned["stress"].iloc[-1])
         yCR = polyval(transformX(xCR, opt), [lcrInt, lcrSlope])
 
         # Recompression range
@@ -196,44 +220,103 @@ class Bilog():
         # -- plot compresibility curve
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
-        ax.semilogx(self.data.raw['stress'][1:],
-                    transformY(self.data.raw['vol'][1:], opt), base=xScl,
-                    ls=(0, (1, 1)), marker='o', lw=1.5, c='k', mfc='w',
-                    label='Compressibility curve')
-        methods = ['Butterfield', 'Oikawa', r'Onitsuka \textit{et al.}']
+        ax.semilogx(
+            self.data.raw["stress"][1:],
+            transformY(self.data.raw["vol"][1:], opt),
+            base=xScl,
+            ls=(0, (1, 1)),
+            marker="o",
+            lw=1.5,
+            c="k",
+            mfc="w",
+            label="Compressibility curve",
+        )
+        methods = ["Butterfield", "Oikawa", "Onitsuka\ et\ al."]
         # Recompression range
-        ax.plot(xRRFit, yRRFit, ls='-', c=colors[2], lw=1.125,
-                label='Recompression range')
-        ax.plot(sigmaRR, volRRlog, ls='', marker='+', c=colors[2],
-                label=f'Data for linear fit\n(R$^2={r2RR:.3f}$)')
+        ax.plot(
+            xRRFit,
+            yRRFit,
+            ls="-",
+            c=colors[2],
+            lw=1.125,
+            label="Recompression range",
+        )
+        ax.plot(
+            sigmaRR,
+            volRRlog,
+            ls="",
+            marker="+",
+            c=colors[2],
+            label=f"Data for linear fit\n(R$^2={r2RR:.3f}$)",
+        )
         # Compression range
-        ax.plot(xCR, yCR, ls='-', c=colors[1], lw=1.125,
-                label='Compression range')
+        ax.plot(
+            xCR, yCR, ls="-", c=colors[1], lw=1.125, label="Compression range"
+        )
         if range2fitCR is not None or self.data.fitCc:
-            ax.plot(sigmaCR, volCRlog, ls='', marker='x', c=colors[1],
-                    label=f'Data for linear fit\n(R$^2={r2CR:.3f}$)')
+            ax.plot(
+                sigmaCR,
+                volCRlog,
+                ls="",
+                marker="x",
+                c=colors[1],
+                label=f"Data for linear fit\n(R$^2={r2CR:.3f}$)",
+            )
         # Other plots
-        ax.plot(self.data.sigmaV, volSigmaV, ls='', marker='|', c='r', ms=15,
-                mfc='w', mew=1.5,
-                label=str().join([r'$\sigma^\prime_\mathrm{v0}=$ ',
-                                  f'{self.data.sigmaV:.0f} kPa']))
-        ax.plot(self.sigmaP, self.vSigmaP, ls='', marker='o', c=colors[0],
-                ms=7, mfc='w', mew=1.5, label=str().join([
-                    r'$\sigma^\prime_\mathrm{p}=$ ',
-                    f'{self.sigmaP:.0f} kPa\n',
-                    f'OCR= {self.ocr:.1f}']))
+        ax.plot(
+            self.data.sigmaV,
+            volSigmaV,
+            ls="",
+            marker="|",
+            c="r",
+            ms=15,
+            mfc="w",
+            mew=1.5,
+            label=str().join(
+                [
+                    "$\sigma^\prime_\mathrm{v0}=$ ",
+                    f"{self.data.sigmaV:.0f} kPa",
+                ]
+            ),
+        )
+        ax.plot(
+            self.sigmaP,
+            self.vSigmaP,
+            ls="",
+            marker="o",
+            c=colors[0],
+            ms=7,
+            mfc="w",
+            mew=1.5,
+            label=str().join(
+                [
+                    "$\sigma^\prime_\mathrm{p}=$ ",
+                    f"{self.sigmaP:.0f} kPa\n",
+                    f"OCR= {self.ocr:.1f}",
+                ]
+            ),
+        )
         # Other details
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.set(ylabel=f'Specific volume, {yLabel}',
-               xlabel=str().join(['Effective vertical stress, ',
-                                  r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.set(
+            ylabel=f"Specific volume, {yLabel}",
+            xlabel=str().join(
+                [
+                    "Effective vertical stress, ",
+                    "$\sigma^\prime_\mathrm{v}$ [kPa]",
+                ]
+            ),
+        )
         ax.xaxis.set_major_formatter(mtick.ScalarFormatter())
         # ax.xaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.grid(False)
-        ax.legend(bbox_to_anchor=(1.125, 0.5), loc=6, title=str().join([
-            r"\textbf{", f"{methods[opt-1]}", " method}"]))
+        ax.legend(
+            bbox_to_anchor=(1.125, 0.5),
+            loc=6,
+            title=str().join(["$\\bf{", f"{methods[opt-1]}", "\ method}$"]),
+        )
         return fig
 
 

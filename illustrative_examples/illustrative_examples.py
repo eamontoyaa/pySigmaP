@@ -18,10 +18,15 @@ from pysigmap.pachecosilva import PachecoSilva
 from pysigmap.casagrande import Casagrande
 import pandas as pd
 from pysigmap.data import Data
-url = ''.join([
-    'https://raw.githubusercontent.com/',
-    'eamontoyaa/data4testing/',
-    'main/pysigmap/testData.csv'])
+import matplotlib.pyplot as plt
+
+url = "".join(
+    [
+        "https://raw.githubusercontent.com/",
+        "eamontoyaa/data4testing/",
+        "main/pysigmap/testData.csv",
+    ]
+)
 data = Data(pd.read_csv(url), sigmaV=75)
 fig = data.plot()  # Figure 2a
 
@@ -63,19 +68,28 @@ fig = method.getSigmaP(range2fitRR=None, range2fitCR=None, opt=1)  # Figure 4a
 
 # 5.2: Oikawa method
 fig = method.getSigmaP(
-    range2fitRR=None, range2fitCR=[1000, 5000], opt=2)  # Figure 4b
+    range2fitRR=None, range2fitCR=[1000, 5000], opt=2
+)  # Figure 4b
 # 5.3: Onitsuka et al. method
 fig = method.getSigmaP(
-    range2fitRR=[0, 30], range2fitCR=[1000, 9000], opt=3)  # Figure 4c
+    range2fitRR=[0, 30], range2fitCR=[1000, 9000], opt=3
+)  # Figure 4c
 
 # Block 6: Computation of 〖σ'〗_"p"  via the strain energy methods
 method = BeckerEtAl(data)
 # 6.1: Becker et al. method
-fig = method.getSigmaP(range2fitRR=None, range2fitCR=None,
-                       morinFormulation=False, zoom=5.5)  # Figure 5a
+fig = method.getSigmaP(
+    range2fitRR=None, range2fitCR=None, morinFormulation=False, zoom=5.5
+)  # Figure 5a
 # 6.2: Morin method
-fig = method.getSigmaP(range2fitRR=[0, 100], range2fitCR=[700, 9000],
-                       morinFormulation=True, zoom=5.5)  # Figure 5b
+fig = method.getSigmaP(
+    range2fitRR=[0, 100],
+    range2fitCR=[700, 9000],
+    morinFormulation=True,
+    zoom=5.5,
+)  # Figure 5b
 # 6.3: Wang and Frost method
 method = WangAndFrost(data)
 fig = method.getSigmaP(range2fitCR=None)  # Figure 5c
+
+plt.show()

@@ -15,17 +15,25 @@ Journal, 47, 3, 281-296. https://doi.org/10.1139/T09-093.
 # -- Required modules
 import numpy as np
 from numpy.polynomial.polynomial import polyval
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
 
 from pysigmap import figsize, colors
 
-plt.rcParams['font.family'] = 'Serif'
-plt.rcParams['font.size'] = 12
-plt.rcParams['text.usetex'] = True
+mpl.rcParams.update(
+    {
+        "text.usetex": False,  # Use mathtext, not LaTeX
+        "font.family": "serif",  # Use the Computer modern font
+        "font.serif": "cmr10",
+        "mathtext.fontset": "cm",
+        "axes.formatter.use_mathtext": True,
+        "axes.unicode_minus": False,
+    }
+)
 
 
-class Boone():
+class Boone:
     """
     ``Boone`` class.
 
@@ -65,71 +73,138 @@ class Boone():
             Figure with the development of the method and the results.
         """
         # Intercept of the line parallel to Cr passing through (σ_v0, e_σ_v0)
-        idxCr2Int = self.data.eSigmaV + \
-            self.data.idxCr * np.log10(self.data.sigmaV)
+        idxCr2Int = self.data.eSigmaV + self.data.idxCr * np.log10(
+            self.data.sigmaV
+        )
         # Intersection of Line parallel to Cr2 - Cc (Preconsolidation pressure)
-        self.sigmaP = 10 ** ((self.data.idxCcInt - idxCr2Int) /
-                             (-self.data.idxCr + self.data.idxCc))
-        self.eSigmaP = polyval(np.log10(self.sigmaP),
-                               [self.data.idxCcInt, -self.data.idxCc])
+        self.sigmaP = 10 ** (
+            (self.data.idxCcInt - idxCr2Int)
+            / (-self.data.idxCr + self.data.idxCc)
+        )
+        self.eSigmaP = polyval(
+            np.log10(self.sigmaP), [self.data.idxCcInt, -self.data.idxCc]
+        )
         self.ocr = self.sigmaP / self.data.sigmaV
 
         # -- plotting
         fig = plt.figure(figsize=figsize)
         ax = fig.add_axes([0.08, 0.12, 0.55, 0.85])
-        ax.plot(self.data.raw['stress'][1:], self.data.raw['e'][1:],
-                ls=(0, (1, 1)), marker='o', lw=1.5, c='k', mfc='w',
-                label='Compressibility curve')
+        ax.plot(
+            self.data.raw["stress"][1:],
+            self.data.raw["e"][1:],
+            ls=(0, (1, 1)),
+            marker="o",
+            lw=1.5,
+            c="k",
+            mfc="w",
+            label="Compressibility curve",
+        )
         # Compression index (Cc)
-        x4Cc = np.linspace(self.sigmaP, self.data.cleaned['stress'].iloc[-1])
+        x4Cc = np.linspace(self.sigmaP, self.data.cleaned["stress"].iloc[-1])
         y4Cc = -self.data.idxCc * np.log10(x4Cc) + self.data.idxCcInt
-        ax.plot(x4Cc, y4Cc, ls='-', lw=1.125, color=colors[1],
-                label=str().join([r'$C_\mathrm{c}=$',
-                                  f'{self.data.idxCc:.3f}']))
+        ax.plot(
+            x4Cc,
+            y4Cc,
+            ls="-",
+            lw=1.125,
+            color=colors[1],
+            label=str().join(["$C_\mathrm{c}=$", f"{self.data.idxCc:.3f}"]),
+        )
         if self.data.fitCc:
-            ax.plot(self.data.cleaned['stress'].iloc[self.data.maskCc],
-                    self.data.cleaned['e'].iloc[self.data.maskCc],
-                    ls='', marker='x', color=colors[1],
-                    label=f'Data for linear fit\n(R$^2={self.data.r2Cc:.3f}$)')
+            ax.plot(
+                self.data.cleaned["stress"].iloc[self.data.maskCc],
+                self.data.cleaned["e"].iloc[self.data.maskCc],
+                ls="",
+                marker="x",
+                color=colors[1],
+                label=f"Data for linear fit\n(R$^2={self.data.r2Cc:.3f}$)",
+            )
         # Recompression index (Cr)
         x4Cr = np.linspace(
-            self.data.raw['stress'].iloc[self.data.maskCr].min(),
-            self.data.raw['stress'].iloc[self.data.maskCr].max())
+            self.data.raw["stress"].iloc[self.data.maskCr].min(),
+            self.data.raw["stress"].iloc[self.data.maskCr].max(),
+        )
         y4Cr = -self.data.idxCr * np.log10(x4Cr) + self.data.idxCrInt
-        ax.plot(x4Cr, y4Cr, ls='-', lw=1.125, color=colors[2],
-                label=str().join([r'$C_\mathrm{r}=$',
-                                  f'{self.data.idxCr:.3f}']))
-        ax.plot(self.data.raw['stress'].iloc[self.data.maskCr],
-                self.data.raw['e'].iloc[self.data.maskCr], ls='', marker='+',
-                color=colors[2],
-                label=f'Data for linear fit\n(R$^2={self.data.r2Cr:.3f}$)')
+        ax.plot(
+            x4Cr,
+            y4Cr,
+            ls="-",
+            lw=1.125,
+            color=colors[2],
+            label=str().join(["$C_\mathrm{r}=$", f"{self.data.idxCr:.3f}"]),
+        )
+        ax.plot(
+            self.data.raw["stress"].iloc[self.data.maskCr],
+            self.data.raw["e"].iloc[self.data.maskCr],
+            ls="",
+            marker="+",
+            color=colors[2],
+            label=f"Data for linear fit\n(R$^2={self.data.r2Cr:.3f}$)",
+        )
         # Line pararel to Cr
-        x4Cr2 = np.linspace(
-            self.data.cleaned['stress'].iloc[1], self.sigmaP)
+        x4Cr2 = np.linspace(self.data.cleaned["stress"].iloc[1], self.sigmaP)
         y4Cr2 = polyval(np.log10(x4Cr2), [idxCr2Int, -self.data.idxCr])
-        ax.plot(x4Cr2, y4Cr2, ls='--', c=colors[2], lw=1.125,
-                label='Parallel line to $C_\\mathrm{r}$')
+        ax.plot(
+            x4Cr2,
+            y4Cr2,
+            ls="--",
+            c=colors[2],
+            lw=1.125,
+            label="Parallel line to $C_\\mathrm{r}$",
+        )
         # Other plots
-        ax.plot(self.data.sigmaV, self.data.eSigmaV, ls='', marker='|', c='r',
-                ms=15, mfc='w', mew=1.5,
-                label=str().join([r'$\sigma^\prime_\mathrm{v_0}=$ ',
-                                  f'{self.data.sigmaV:.0f} kPa']))
-        ax.plot(self.sigmaP, self.eSigmaP, ls='', marker='o', c=colors[0],
-                ms=7, mfc='w', mew=1.5,
-                label=str().join([r'$\sigma^\prime_\mathrm{p}=$ ',
-                                  f'{self.sigmaP:.0f} kPa\n',
-                                  f'OCR= {self.ocr:.1f}']))
+        ax.plot(
+            self.data.sigmaV,
+            self.data.eSigmaV,
+            ls="",
+            marker="|",
+            c="r",
+            ms=15,
+            mfc="w",
+            mew=1.5,
+            label=str().join(
+                [
+                    "$\sigma^\prime_\mathrm{v_0}=$ ",
+                    f"{self.data.sigmaV:.0f} kPa",
+                ]
+            ),
+        )
+        ax.plot(
+            self.sigmaP,
+            self.eSigmaP,
+            ls="",
+            marker="o",
+            c=colors[0],
+            ms=7,
+            mfc="w",
+            mew=1.5,
+            label=str().join(
+                [
+                    "$\sigma^\prime_\mathrm{p}=$ ",
+                    f"{self.sigmaP:.0f} kPa\n",
+                    f"OCR= {self.ocr:.1f}",
+                ]
+            ),
+        )
         # Other details
-        ax.spines['top'].set_visible(False)
-        ax.spines['right'].set_visible(False)
-        ax.set(xscale='log', ylabel='Void ratio, $e$',
-               xlabel=str().join(['Effective vertical stress, ',
-                                  r'$\sigma^\prime_\mathrm{v}$ [kPa]']))
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+        ax.set(
+            xscale="log",
+            ylabel="Void ratio, $e$",
+            xlabel=str().join(
+                [
+                    "Effective vertical stress, ",
+                    "$\sigma^\prime_\mathrm{v}$ [kPa]",
+                ]
+            ),
+        )
         ax.xaxis.set_major_formatter(mtick.ScalarFormatter())
         ax.yaxis.set_minor_locator(mtick.AutoMinorLocator())
         ax.grid(False)
-        ax.legend(bbox_to_anchor=(1.125, 0.5), loc=6,
-                  title=r"\textbf{Boone method}")
+        ax.legend(
+            bbox_to_anchor=(1.125, 0.5), loc=6, title="$\\bf{Boone\ method}$"
+        )
         return fig
 
 

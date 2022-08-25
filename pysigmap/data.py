@@ -18,7 +18,7 @@ from mstools.mstools import r2_score
 from pysigmap import figsize, colors
 
 
-plt.style.use("default")
+# plt.style.use("default")
 mpl.rcParams.update(
     {
         "text.usetex": False,  # Use mathtext, not LaTeX
@@ -27,7 +27,6 @@ mpl.rcParams.update(
         "mathtext.fontset": "cm",
         "axes.formatter.use_mathtext": True,
         "axes.unicode_minus": False,
-        "backend": "TKAgg",
     }
 )
 
@@ -92,6 +91,7 @@ class Data:
         strainPercent=True,
         reloading=True,
         secondUnloading=True,
+        use_this_UR_stage=0,
     ):
         """Initialize the class."""
         self.raw = rawData
@@ -99,6 +99,7 @@ class Data:
         self.strainPercent = strainPercent
         self.reloading = reloading
         self.secondUnloading = secondUnloading
+        self.use_this_UR_stage = use_this_UR_stage
         self.preprocessing()
         self.getBreakIndices()
         self.clean()
@@ -138,30 +139,43 @@ class Data:
         -------
         None.
         """
-        for i in self.raw.index[:-1]:
+        idx_unloading_init = [  # brkIdx1: Start of the first unloading
+            i
+            for i in self.raw.index[1:-1]
             if (
-                self.raw["stress"][i + 1] > self.raw["stress"][i]
-                and self.raw["stress"][i + 2] < self.raw["stress"][i + 1]
-            ):
-                brkIdx1 = i + 1  # brkIdx1: start of the first unloading
-                break
-        if self.reloading:
-            for i in self.raw.index[brkIdx1 + 1 : -1]:
+                self.raw["stress"][i] > self.raw["stress"][i - 1]
+                and self.raw["stress"][i] > self.raw["stress"][i + 1]
+            )
+        ]
+        if self.secondUnloading:
+            idx_unloading_init.pop(-1)
+        self.idx_unloading_init = idx_unloading_init
+        brkIdx1 = idx_unloading_init[self.use_this_UR_stage]
+
+        if self.reloading:  # Cases 2-3: Reloading and second unloading
+            idx_reloading_init = [  # brkIdx2: End of the first unloading
+                i
+                for i in self.raw.index[1:-1]
                 if (
-                    self.raw["stress"][i + 1] < self.raw["stress"][i]
-                    and self.raw["stress"][i + 2] > self.raw["stress"][i + 1]
-                ):
-                    brkIdx2 = i + 1  # brkIdx2: end of the first unloading
-                    break
-            # brkIdx3: Point on the NCL after the first reloading
-            brkIdx3 = self.raw.query(f"stress == stress[{brkIdx1}]").index[1]
-            # brkIdx4: index of the last point on the NCL
-            brkIdx4 = self.raw.query("stress == stress.max()").index[0]
-            self.secondUnloading = False
-        else:
-            brkIdx2 = self.raw.index[-1]
+                    self.raw["stress"][i] < self.raw["stress"][i - 1]
+                    and self.raw["stress"][i] < self.raw["stress"][i + 1]
+                )
+            ]
+            brkIdx2 = idx_reloading_init[self.use_this_UR_stage]
+            self.idx_reloading_init = idx_reloading_init
+
+            # brkIdx3: Points on the NCL after the each reloading
+            idx_reloading_ncl = [
+                self.raw.query(f"stress == stress[{i}]").index[1]
+                for i in idx_unloading_init
+            ]
+            brkIdx3 = idx_reloading_ncl[self.use_this_UR_stage]
+            self.idx_reloading_ncl = idx_reloading_ncl
+        else:  # Case 1: No reloading - No second unloading
+            brkIdx2 = self.raw.index[-1]  # last point of the unluading
             brkIdx3 = None
-            brkIdx4 = None
+        # brkIdx4: index of the last point on the NCL
+        brkIdx4 = self.raw.query("stress == stress.max()").index[0]
 
         self.brkIdx1 = brkIdx1
         self.brkIdx2 = brkIdx2
@@ -178,19 +192,20 @@ class Data:
         None.
         """
         if self.reloading:
+            idx_init = [-1] + self.idx_reloading_ncl
+            idx_end = self.idx_unloading_init + [self.brkIdx4]
             self.cleaned = pd.concat(
                 [
-                    self.raw[0 : self.brkIdx1 + 1],
-                    self.raw[self.brkIdx3 + 1 : self.brkIdx4 + 1],
+                    self.raw[idx_init[i] + 1 : idx_end[i] + 1]
+                    for i in range(len(idx_init))
                 ]
             )
         else:
-            self.cleaned = self.raw[0 : self.brkIdx1 + 1]
-        self.cleaned.reset_index(drop=True, inplace=True)  # update idx
-        # -- Cubic spline that passes through the data
+            self.cleaned = self.raw[: self.brkIdx1 + 1]
+        self.cleaned.reset_index(drop=True, inplace=True)
         sigmaLog = np.log10(self.cleaned["stress"][1:])
         cs = CubicSpline(x=sigmaLog, y=self.cleaned["e"][1:])
-        self.eSigmaV = float(cs(np.log10(self.sigmaV)))  # void ratio at sigmaV
+        self.eSigmaV = float(cs(np.log10(self.sigmaV)))
         return
 
     def findStressIdx(self, stress2find, cleanedData=True):
@@ -211,13 +226,12 @@ class Data:
             The ceiling index of the stress input.
         """
         if stress2find == 0:
-            idx = 1
+            return 1
         elif stress2find > self.raw["stress"].max():
-            idx = None
+            return None
         else:
             data4finding = self.cleaned if cleanedData else self.raw
-            idx = data4finding.query(f"stress >= {stress2find}").index[0]
-        return idx
+            return data4finding.query(f"stress >= {stress2find}").index[0]
 
     def compressionIdx(self, range2fitCc=None):
         """
