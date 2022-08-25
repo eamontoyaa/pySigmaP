@@ -6,33 +6,22 @@ Structure
 Each module is documented and basic examples are illustrated.
 
 
-``data``
---------
+
 .. automodule:: data
     :members:
 
-``casagrande``
---------------
 .. automodule:: casagrande
     :members:
 
-``energy``
-----------
 .. automodule:: energy
     :members:
 
-``bilog``
----------
 .. automodule:: bilog
     :members:
 
-``pachecosilva``
-----------------
 .. automodule:: pachecosilva
     :members:
 
-``boone``
----------
 .. automodule:: boone
     :members:
 

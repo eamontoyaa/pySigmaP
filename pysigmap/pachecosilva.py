@@ -1,12 +1,13 @@
 """
-``pachecosilva.py`` module.
+``pachecosilva.py`` module
+--------------------------
 
 Contains the class and its methods to determine the preconsolidation
 pressure from a compressibility curve via the method proposed by Pacheco Silva
 (1970).
 
 References
-----------
+~~~~~~~~~~
 Pacheco Silva, F. 1970. A new graphical construction for determination of the
 pre-consolidation stress of a soil sample. In Proceedings of the 4th Brazilian
 Conference on Soil Mechanics and Foundation Engineering, Rio de Janeiro,

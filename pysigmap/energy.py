@@ -1,12 +1,13 @@
 """
-``energy.py`` module.
+``energy.py`` module
+--------------------
 
 Contains the classes and theis methods to determine the preconsolidation
 pressure from a compressibility curve via the strain energy methods proposed by
 Becker et al. (1987), Morin (1988) and Wang & Frost (2004).
 
 References
-----------
+~~~~~~~~~~
 Becker, D. E., Crooks, J. H. A., Been, K., & Jefferies, M. G. (1987). Work as a
 criterion for determining in situ and yield stresses in clays. Canadian
 Geotechnical Journal, 24, 4, 549-564, https://doi.org/10.1139/t87-070

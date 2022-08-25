@@ -1,12 +1,13 @@
 """
-``bilog.py`` module.
+``bilog.py`` module
+-------------------
 
 Contains the class and its methods to determine the preconsolidation
 pressure from a compressibility curve via the Bilogarithmic methods proposed
 by Butterfield (1979), Oikawa (1987) and Onitsuka et al. (1995).
 
 References
-----------
+~~~~~~~~~~
 Butterfield, R. (1979). A natural compression law for soils (an advance on
 e –log p'). Géotechnique, 29, 4, 469-480,
 https://doi.org/10.1680/geot.1979.29.4.469

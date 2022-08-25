@@ -1,12 +1,13 @@
 """
-``casagrande.py`` module.
+``casagrande.py`` module
+------------------------
 
 Contains the class and its methods to determine the preconsolidation
 pressure from a compressibility curve via the method proposed by Casagrande
 (1963).
 
 References
-----------
+~~~~~~~~~~
 Casagrande, A. (1936). The determination of pre-consolidation load and its
 practical significance. In Proceedings of the First International Conference
 on Soil Mechanins and Foundations Engineering, 3, 60-64.
