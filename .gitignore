@@ -124,5 +124,6 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+illustrative_examples/tests_safet_mutapcija.py
 illustrative_examples/*
 !illustrative_examples/illustrative_examples.py
