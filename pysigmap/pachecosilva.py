@@ -17,7 +17,7 @@ Brazil. Vol. 2, No.1, pp. 225–232.
 
 # -- Required modules
 import numpy as np
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, interp1d
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -79,12 +79,14 @@ class PachecoSilva:
         # -- Cubic spline that passes through the data
         sigmaLog = np.log10(self.data.cleaned["stress"][1:])
         cs = CubicSpline(x=sigmaLog, y=self.data.cleaned["e"][1:])
+        interpolator = interp1d(x=sigmaLog, y=self.data.cleaned["e"][1:])
 
         # -- Lines of the Pacheco Silva's method
         # Intersection: NCL - e_0
         xPt1 = 10 ** ((self.data.e_0 - self.data.idxCcInt) / -self.data.idxCc)
         # Intersection: first vertical - compressibility curve
-        yPt2 = cs(np.log10(xPt1))
+        # yPt2 = cs(np.log10(xPt1))
+        yPt2 = interpolator(np.log10(xPt1))
         # Intersection: first horizontal - NCL (Preconsolidation pressure)
         self.sigmaP = 10 ** ((yPt2 - self.data.idxCcInt) / -self.data.idxCc)
         self.ocr = self.sigmaP / self.data.sigmaV

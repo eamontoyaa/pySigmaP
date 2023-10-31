@@ -75,7 +75,9 @@ class Casagrande:
         self.data = data
         return
 
-    def getSigmaP(self, mcp=None, range2fitFOP=None, loglog=True):
+    def getSigmaP(
+        self, mcp=None, range2fitFOP=None, range2fitCS=None, loglog=True
+    ):
         """
         Return the value of the preconsolidation pressure.
 
@@ -105,32 +107,47 @@ class Casagrande:
 
         def transform(x, reverse=False):
             if reverse:  # Remove a logaritmic scale
-                if loglog:
-                    return 10**10**x
-                else:
-                    return 10**x
+                return 10**10**x if loglog else 10**x
             else:  # Set a logaritmic scale
-                if loglog:
-                    return np.log10(np.log10(x))
-                else:
-                    return np.log10(x)
+                return np.log10(np.log10(x)) if loglog else np.log10(x)
 
-        sigmaLog = np.log10(self.data.cleaned["stress"][1:])
-        cs = CubicSpline(x=sigmaLog, y=self.data.cleaned["e"][1:])
+        # -- Indices to fit the Cubis Spline (CS)
+        if range2fitCS is None:
+            idxInitCS, idxEndCS = 1, len(self.data.cleaned["stress"]) + 1
+        else:
+            idxInitCS = self.data.findStressIdx(
+                stress2find=range2fitCS[0], cleanedData=True
+            )
+            idxEndCS = self.data.findStressIdx(
+                stress2find=range2fitCS[1], cleanedData=True
+            )
+        sigmaLog = np.log10(self.data.cleaned["stress"][idxInitCS:idxEndCS])
+        cs = CubicSpline(
+            x=sigmaLog, y=self.data.cleaned["e"][idxInitCS:idxEndCS]
+        )
         sigmaCS = np.linspace(sigmaLog.iloc[0], sigmaLog.iloc[-1], 100)
-        if range2fitFOP is None:  # Using a cubic spline
+        if range2fitFOP is None and mcp is None:  # Using a cubic spline
             x4FOP = 10**sigmaCS
             # -- Curvature function k(x) = f''(x)/(1+(f'(x))²)³/²
             curvature = abs(cs(sigmaCS, 2)) / (1 + cs(sigmaCS, 1) ** 2) ** (
                 3 / 2
             )
-            maxCurvIdx = find_peaks(
-                curvature, distance=self.data.cleaned["stress"].max()
-            )[0][0]
+            # maxCurvIdx = find_peaks(
+            #     curvature, distance=self.data.cleaned["stress"].max()
+            # )[0][0]
+            try:
+                maxCurvIdx = find_max_not_at_ends(curvature)
+            except Exception:
+                print(
+                    "Maximun curvature not found matematicaly.",
+                    "Choosing the absolute maximum value.",
+                    sep="\n",
+                )
+                maxCurvIdx = np.argmax(curvature)
             self.sigmaMC = 10 ** sigmaCS[maxCurvIdx]  # Max. Curvature point
             self.eMC = cs(sigmaCS[maxCurvIdx])  # Void ratio at MC
 
-        else:  # Using a fourth order polynomial (FOP)
+        elif mcp is None:  # Using a fourth order polynomial (FOP)
             # -- Indices to fit the FOP
             idxInitFOP = self.data.findStressIdx(
                 stress2find=range2fitFOP[0], cleanedData=True
@@ -160,9 +177,18 @@ class Casagrande:
             )
             secondDer = 2 * p2 + 6 * p3 * x4FOPlog + 12 * p4 * x4FOPlog**2
             curvature = abs(secondDer) / (1 + firstDer**2) ** 1.5
-            maxCurvIdx = find_peaks(
-                curvature, distance=self.data.cleaned["stress"].max()
-            )[0][0]
+            # maxCurvIdx = find_peaks(
+            #     curvature, distance=self.data.cleaned["stress"].max()
+            # )[0][0]
+            try:
+                maxCurvIdx = find_max_not_at_ends(curvature)
+            except Exception:
+                print(
+                    "Maximun curvature not found matematicaly.",
+                    "Choosing the absolute maximum value.",
+                    sep="\n",
+                )
+                maxCurvIdx = np.argmax(curvature)
             self.sigmaMC = transform(x4FOPlog[maxCurvIdx], True)  # Max. Curv.
             self.eMC = y4FOP[maxCurvIdx]  # Void ratio at max. curvature
 
@@ -248,6 +274,24 @@ class Casagrande:
                 mfc="w",
                 label="Curvature",
             )
+            if range2fitCS is not None:  # Cubic spline
+                l4 = ax1.plot(
+                    10**sigmaCS,
+                    cs(sigmaCS),
+                    ls="--",
+                    lw=1.125,
+                    color=colors[2],
+                    label="Cubic spline",
+                )
+                l5 = ax1.plot(
+                    self.data.cleaned["stress"][idxInitCS:idxEndCS],
+                    self.data.cleaned["e"][idxInitCS:idxEndCS],
+                    ls="",
+                    marker="+",
+                    c=colors[2],
+                    label="Data for cubic spline",
+                )
+                allLayers += l4 + l5
             # if range2fitFOP is None:  # Curvature
             if range2fitFOP is not None:  # FOP fit
                 l4 = ax1.plot(
@@ -268,9 +312,6 @@ class Casagrande:
                 )
                 allLayers += l4 + l5
             allLayers += l6
-        else:  # Cubic spline
-            # allLayers = l1 + l2
-            pass
         # Other plots
         l7 = ax1.plot(
             self.data.sigmaV,
@@ -347,6 +388,33 @@ class Casagrande:
             ax2.set(ylabel="Curvature, $k$")
             ax2.spines["top"].set_visible(False)
         return fig
+
+
+def find_max_not_at_ends(vector):
+    """
+    Find the index of the maximum value of a vector that is not at the ends.
+
+    Parameters
+    ----------
+    vector : array_like
+        Vector to find the maximum value.
+
+    Returns
+    -------
+    max_index : int
+        Index of the maximum value of the vector that is not at the ends.
+
+    """
+
+    while True:
+        # Exclude the first and last element
+        vector = vector[1:-1]
+        # Find the index of the maximum value
+        max_index = np.argmax(vector)
+        # If the maximum value is not at the ends of the new vector, break the loop
+        if max_index not in [0, len(vector) - 1]:
+            break
+    return max_index + 1
 
 
 # %%

@@ -14,12 +14,12 @@ readme = "README.rst"
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
 dynamic = ["version", "description"]
-requires-python = ">=3.6"
+requires-python = ">=3.7"
 dependencies = [
-    "numpy >=1.19.1",
-    "matplotlib >=3.2.2",
-    "scipy >= 1.5.0",
-    "pandas >= 1.1.1",
+    "numpy >=1.23.5",
+    "matplotlib >=3.7.1",
+    "scipy >= 1.11.3",
+    "pandas >= 1.5.3",
     "mstools >= 0.1.0"
 ]
 

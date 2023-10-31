@@ -52,7 +52,7 @@ master_doc = "index"
 project = "pySigmaP"
 copyright = "2020, E. A. Montoya-Araque, A. J. Aparicio-Ortube, D. G. Zapata-Medina, L. G. Arboleda-Monsalve and Universidad Nacional de Colombia"
 author = "E. A. Montoya-Araque\\\A. J. Aparicio-Ortube\\\D. G. Zapata-Medina\\\L. G. Arboleda-Monsalve"
-release = "0.1.9"
+release = "0.1.10"
 
 # -- Options for HTML output -------------------------------------------
 

@@ -9,7 +9,7 @@ compressibility curve.
 # -- Required modules
 import numpy as np
 from numpy.polynomial.polynomial import polyfit, polyval
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, interp1d
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -109,8 +109,10 @@ class Data:
         self.preprocessing()
         self.getBreakIndices()
         self.clean()
-        self.compressionIdx()
-        self.recompressionIdx()
+        self.idxCc = None
+        self.idxCr = None
+        # self.compressionIdx()
+        # self.recompressionIdx()
         return
 
     def preprocessing(self):
@@ -210,8 +212,10 @@ class Data:
             self.cleaned = self.raw[: self.brkIdx1 + 1]
         self.cleaned.reset_index(drop=True, inplace=True)
         sigmaLog = np.log10(self.cleaned["stress"][1:])
-        cs = CubicSpline(x=sigmaLog, y=self.cleaned["e"][1:])
-        self.eSigmaV = float(cs(np.log10(self.sigmaV)))
+        # cs = CubicSpline(x=sigmaLog, y=self.cleaned["e"][1:])
+        # self.eSigmaV = float(cs(np.log10(self.sigmaV)))
+        interpolator = interp1d(x=sigmaLog, y=self.cleaned["e"][1:])
+        self.eSigmaV = interpolator(np.log10(self.sigmaV))
         return
 
     def findStressIdx(self, stress2find, cleanedData=True):
@@ -368,49 +372,52 @@ class Data:
             ),
         )
         # Compression index
-        x4Cc = np.linspace(
-            self.cleaned["stress"].iloc[-4], self.cleaned["stress"].iloc[-1]
-        )
-        y4Cc = -self.idxCc * np.log10(x4Cc) + self.idxCcInt
-        ax.plot(
-            x4Cc,
-            y4Cc,
-            ls="-",
-            lw=1.125,
-            color=colors[1],
-            label=str().join(["$C_\mathrm{c}=$", f"{self.idxCc:.3f}"]),
-        )
-        if self.fitCc:
-            ax.plot(
-                self.cleaned["stress"].iloc[self.maskCc],
-                self.cleaned["e"].iloc[self.maskCc],
-                ls="",
-                marker="x",
-                color=colors[1],
-                label=f"Data for linear fit\n(R$^2={self.r2Cc:.3f}$)",
+        if self.idxCc is not None:
+            x4Cc = np.linspace(
+                self.cleaned["stress"].iloc[-2],
+                self.cleaned["stress"].iloc[-1],
             )
+            y4Cc = -self.idxCc * np.log10(x4Cc) + self.idxCcInt
+            ax.axline(
+                (x4Cc[0], y4Cc[0]),
+                (x4Cc[-1], y4Cc[-1]),
+                ls="-",
+                lw=1.125,
+                color=colors[1],
+                label=str().join(["$C_\mathrm{c}=$", f"{self.idxCc:.3f}"]),
+            )
+            if self.fitCc:
+                ax.plot(
+                    self.cleaned["stress"].iloc[self.maskCc],
+                    self.cleaned["e"].iloc[self.maskCc],
+                    ls="",
+                    marker="x",
+                    color=colors[1],
+                    label=f"Data for linear fit\n(R$^2={self.r2Cc:.3f}$)",
+                )
         # Recompression index
-        x4Cr = np.linspace(
-            self.raw["stress"].iloc[self.maskCr].min(),
-            self.raw["stress"].iloc[self.maskCr].max(),
-        )
-        y4Cr = -self.idxCr * np.log10(x4Cr) + self.idxCrInt
-        ax.plot(
-            x4Cr,
-            y4Cr,
-            ls="-",
-            lw=1.125,
-            color=colors[2],
-            label=str().join(["$C_\mathrm{r}=$", f"{self.idxCr:.3f}"]),
-        )
-        ax.plot(
-            self.raw["stress"].iloc[self.maskCr],
-            self.raw["e"].iloc[self.maskCr],
-            ls="",
-            marker="+",
-            color=colors[2],
-            label=f"Data for linear fit\n(R$^2={self.r2Cr:.3f}$)",
-        )
+        if self.idxCr is not None:
+            x4Cr = np.linspace(
+                self.raw["stress"].iloc[self.maskCr].min(),
+                self.raw["stress"].iloc[self.maskCr].max(),
+            )
+            y4Cr = -self.idxCr * np.log10(x4Cr) + self.idxCrInt
+            ax.plot(
+                x4Cr,
+                y4Cr,
+                ls="-",
+                lw=1.125,
+                color=colors[2],
+                label=str().join(["$C_\mathrm{r}=$", f"{self.idxCr:.3f}"]),
+            )
+            ax.plot(
+                self.raw["stress"].iloc[self.maskCr],
+                self.raw["e"].iloc[self.maskCr],
+                ls="",
+                marker="+",
+                color=colors[2],
+                label=f"Data for linear fit\n(R$^2={self.r2Cr:.3f}$)",
+            )
         # other details
         ax.spines["top"].set_visible(False)
         ax.spines["right"].set_visible(False)

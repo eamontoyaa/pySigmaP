@@ -3,7 +3,7 @@
 """Application software for calculating the preconsolidation pressure from the incremental loading oedometer testing"""
 
 __all__ = ["data", "casagrande", "energy", "bilog", "pachecosilva", "boone"]
-__version__ = "0.1.9"
+__version__ = "0.1.10"
 
 # Global variables
 figsize = [10, 5.3]

@@ -23,7 +23,7 @@ https://doi.org/10.3208/sandf.35.61
 # -- Required modules
 import numpy as np
 from numpy.polynomial.polynomial import polyfit, polyval
-from scipy.interpolate import CubicSpline
+from scipy.interpolate import CubicSpline, interp1d
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mtick
@@ -168,7 +168,9 @@ class Bilog:
         volLog = transformY(self.data.cleaned["vol"][1:], opt)
         cs = CubicSpline(x=sigmaLog, y=volLog)
         # Specific volume at sigma V
-        volSigmaV = cs(transformX(self.data.sigmaV, opt))
+        # volSigmaV = cs(transformX(self.data.sigmaV, opt))
+        interpolator = interp1d(x=sigmaLog, y=volLog)
+        volSigmaV = interpolator(transformX(self.data.sigmaV, opt))
 
         # -- Compression range (CR)
         self.maskCR = np.full(len(self.data.cleaned), False)
