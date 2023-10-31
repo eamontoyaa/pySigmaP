@@ -1,9 +1,8 @@
-"""
-``data.py`` module
-------------------
+"""``data.py`` module.
 
 Contains the class and its methods for loading and managing the data of the
 compressibility curve.
+
 """
 
 # -- Required modules

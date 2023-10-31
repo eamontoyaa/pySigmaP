@@ -1,6 +1,4 @@
-==========
-References
-==========
+# References
 
 Becker, D. E., Crooks, J. H. A., Been, K., & Jefferies, M. G. (1987). Work as a
 criterion for determining in situ and yield stresses in clays. Canadian

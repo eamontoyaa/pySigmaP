@@ -126,3 +126,4 @@ dmypy.json
 
 illustrative_examples/*
 .vscode/*
+docs_OLD/*

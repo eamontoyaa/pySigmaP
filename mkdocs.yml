@@ -1,0 +1,39 @@
+site_name: pySigmaP Docs
+repo_url: https://github.com/eamontoyaa/pySigmaP
+site_author: Exneyder A. Montoya-Araque, A. J. Aparicio-Ortube, D. G. Zapata-Medina, and L. G. Arboleda-Monsalve
+copyright: Copyright &copy; 2023 Exneyder A. Montoya-Araque, A. J. Aparicio-Ortube, D. G. Zapata-Medina, and L. G. Arboleda-Monsalve
+
+nav:
+  - Home: index.md
+  - Illustrative example: tutorials/01_illustrative_example.ipynb
+  - Package docstrings: package.md
+  - History: history.md
+  - References: references.md
+
+theme:
+  name: readthedocs
+  highlightjs: true
+
+plugins:
+  - search
+  - mkdocstrings:
+      handlers:
+        # See: https://mkdocstrings.github.io/python/usage/
+        python:
+          options:
+            docstring_style: numpy
+            show_root_heading: true
+            show_source: true
+            show_signature: true
+            separate_signature: true
+            line_length: 80
+  - mkdocs-jupyter:
+      include: ["*.ipynb"]
+      # ignore_h1_titles: True
+      execute: false
+      include_source: True
+
+markdown_extensions:
+  - markdown_include.include:
+      base_path: ./
+#   - admonition

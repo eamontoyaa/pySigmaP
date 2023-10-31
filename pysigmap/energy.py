@@ -1,24 +1,10 @@
-"""
-``energy.py`` module
---------------------
+"""``energy.py`` module.
 
 Contains the classes and theis methods to determine the preconsolidation
 pressure from a compressibility curve via the strain energy methods proposed by
-Becker et al. (1987), Morin (1988) and Wang & Frost (2004).
-
-References
-~~~~~~~~~~
-Becker, D. E., Crooks, J. H. A., Been, K., & Jefferies, M. G. (1987). Work as a
-criterion for determining in situ and yield stresses in clays. Canadian
-Geotechnical Journal, 24, 4, 549-564, https://doi.org/10.1139/t87-070
-
-Morin, P. (1988). Work as a criterion for determining in situ and yield
-stresses in clays: Discussion. Canadian Geotechnical Journal, 25, 4, 845-847,
-https://doi.org/10.1139/t88-096
-
-Wang, L. B., & Frost, J. D. (2004). Dissipated strain energy method for
-determining preconsolidation pressure. Canadian Geotechnical Journal, 41, 4,
-760-768, https://doi.org/10.1139/t04-013
+[Becker et al. (1987)](https://doi.org/10.1139/t87-070),
+[Morin (1988)](https://doi.org/10.1139/t88-096) and
+[Wang & Frost (2004)](https://doi.org/10.1139/t04-013).
 
 """
 
@@ -48,8 +34,7 @@ mpl.rcParams.update(
 
 
 class BeckerEtAl:
-    """
-    ``BeckerEtAl`` class.
+    """``BeckerEtAl`` class.
 
     When the object is instanced, the method ``getSigmaP()`` calculates the
     preconsolidation pressure by the method proposed by Becker et al. (1987)
@@ -372,8 +357,7 @@ class BeckerEtAl:
 
 
 class WangAndFrost(BeckerEtAl):
-    """
-    ``WangAndFrost`` class.
+    """``WangAndFrost`` class.
 
     When the object is instanced, the method ``getSigmaP()`` calculates the
     preconsolidation pressure by the method proposed by Wang & Frost (2004)

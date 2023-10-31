@@ -1,15 +1,8 @@
-"""
-``boone.py`` module
--------------------
+""" ``boone.py`` module.
 
 Contains the class and its methods to determine the preconsolidation
-pressure from a compressibility curve via the method proposed by Boone (2010).
-
-References
-~~~~~~~~~~
-Boone, S. J. (2010). A critical reappraisal of "preconsolidation
-pressure" interpretations using the oedometer test. Canadian Geotechnical
-Journal, 47, 3, 281-296. https://doi.org/10.1139/T09-093.
+pressure from a compressibility curve via the method proposed by
+[Boone (2010)](https://doi.org/10.1139/T09-093).
 
 """
 
@@ -35,8 +28,7 @@ mpl.rcParams.update(
 
 
 class Boone:
-    """
-    ``Boone`` class.
+    """``Boone`` class.
 
     When the object is instanced, the method ``getSigmaP()`` calculates the
     preconsolidation pressure by the method proposed by Boone (2010) based on

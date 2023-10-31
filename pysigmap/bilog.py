@@ -1,23 +1,11 @@
-"""
-``bilog.py`` module
--------------------
+"""``bilog.py`` module.
 
 Contains the class and its methods to determine the preconsolidation
 pressure from a compressibility curve via the Bilogarithmic methods proposed
-by Butterfield (1979), Oikawa (1987) and Onitsuka et al. (1995).
+by [Butterfield (1979)](https://doi.org/10.1680/geot.1979.29.4.469),
+[Oikawa (1987)](https://doi.org/10.3208/sandf1972.27.3_99) and
+[Onitsuka et al. (1995)](https://doi.org/10.3208/sandf.35.61).
 
-References
-~~~~~~~~~~
-Butterfield, R. (1979). A natural compression law for soils (an advance on
-e –log p'). Géotechnique, 29, 4, 469-480,
-https://doi.org/10.1680/geot.1979.29.4.469
-
-Oikawa, H. (1987). Compression Curve of Soft Soils. Soils and Foundations,
-27, 3, 99-104, https://doi.org/10.3208/sandf1972.27.3_99
-
-Onitsuka, K., Hong, Z., Hara, Y., & Yoshitake, S. (1995). Interpretation of
-Oedometer Test Data for Natural Clays. Soils and Foundations, 35, 3, 61-70,
-https://doi.org/10.3208/sandf.35.61
 """
 
 # -- Required modules
@@ -44,8 +32,7 @@ mpl.rcParams.update(
 
 
 class Bilog:
-    """
-    ``Bilog`` class.
+    """``Bilog`` class.
 
     When the object is instanced, the method ``getSigmaP()`` calculates the
     preconsolidation pressure by the methods proposed by Butterfield (1979),
